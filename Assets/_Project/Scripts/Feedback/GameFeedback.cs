@@ -1,0 +1,147 @@
+using System;
+using System.Collections;
+using UnityEngine;
+using UnityEngine.UI;
+
+// ReSharper disable once CheckNamespace
+public class GameFeedback : MonoBehaviour
+{
+    [Serializable]
+    private class Cue
+    {
+        public AudioClip clip;
+        [Range(0f, 1f)] public float volume = 0.5f;
+    }
+
+    [SerializeField] private GameSession session;
+    [SerializeField] private AudioSource source;
+    [SerializeField] private Cue throwCue = new() { volume = 0.25f };
+    [Tooltip("Chọn ngẫu nhiên một clip cho mỗi lần dao cắm thành công")]
+    [SerializeField] private AudioClip[] woodHitClips = { };
+    [SerializeField, Range(0f, 1f)] private float woodHitVolume = 0.65f;
+    [SerializeField] private Cue clashCue = new() { volume = 0.65f };
+    [SerializeField] private Cue stageClearCue = new() { volume = 0.45f };
+    [SerializeField] private Cue runFailedCue = new() { volume = 0.35f };
+    [SerializeField] private Cue victoryCue = new() { volume = 0.45f };
+    [SerializeField] private Cue clickCue = new() { volume = 0.3f };
+    [SerializeField] private Cue toggleCue = new() { volume = 0.3f };
+    [Tooltip("Tiếng báo thua phát sau tiếng va chạm")]
+    [SerializeField, Min(0f)] private float runFailedDelay = 0.3f;
+    [SerializeField] private Button[] clickButtons = { };
+    [SerializeField] private Button[] toggleButtons = { };
+
+    private GameSession.State _previousState;
+    private int _previousKnives;
+    private int _previousStage;
+
+    private void Awake()
+    {
+        if (!session || !source)
+        {
+            Debug.LogError("Assign the GameSession and an AudioSource.", this);
+            enabled = false;
+        }
+    }
+
+    // Đăng ký nút ở Start để GameHUD đã áp dụng cài đặt âm thanh trước khi tiếng bật/tắt phát.
+    private void Start()
+    {
+        foreach (var button in clickButtons)
+        {
+            button.onClick.AddListener(() => Play(clickCue));
+        }
+
+        foreach (var button in toggleButtons)
+        {
+            button.onClick.AddListener(() => Play(toggleCue));
+        }
+    }
+
+    private void OnEnable()
+    {
+        session.Changed += OnSessionChanged;
+        Remember();
+    }
+
+    private void OnDisable()
+    {
+        session.Changed -= OnSessionChanged;
+    }
+
+    // Suy ra sự kiện từ thay đổi của session; chỉ phát âm thanh, không quyết định gameplay.
+    private void OnSessionChanged()
+    {
+        if (_previousState == GameSession.State.Playing)
+        {
+            var state = session.CurrentState;
+            var sameStage = session.StageNumber == _previousStage;
+            switch (state)
+            {
+                case GameSession.State.Playing when sameStage:
+                {
+                    if (session.KnivesRemaining < _previousKnives)
+                    {
+                        Play(throwCue);
+                    }
+                    else if (session.KnivesRemaining == _previousKnives)
+                    {
+                        PlayWoodHit();
+                    }
+
+                    break;
+                }
+                case GameSession.State.Transition:
+                    PlayWoodHit();
+                    Play(stageClearCue);
+                    break;
+                case GameSession.State.Victory:
+                    PlayWoodHit();
+                    Play(victoryCue);
+                    break;
+                case GameSession.State.GameOver:
+                    Play(clashCue);
+                    StartCoroutine(PlayRunFailedLater());
+                    break;
+                case GameSession.State.Menu:
+                case GameSession.State.Paused:
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
+
+        Remember();
+    }
+
+    private void Remember()
+    {
+        _previousState = session.CurrentState;
+        _previousKnives = session.KnivesRemaining;
+        _previousStage = session.StageNumber;
+    }
+
+    private IEnumerator PlayRunFailedLater()
+    {
+        yield return new WaitForSeconds(runFailedDelay);
+        if (session.CurrentState == GameSession.State.GameOver)
+        {
+            Play(runFailedCue);
+        }
+    }
+
+    private void PlayWoodHit()
+    {
+        if (woodHitClips.Length > 0)
+        {
+            source.PlayOneShot(woodHitClips[UnityEngine.Random.Range(0, woodHitClips.Length)], woodHitVolume);
+        }
+    }
+
+    private void Play(Cue cue)
+    {
+        if (cue.clip)
+        {
+            source.PlayOneShot(cue.clip, cue.volume);
+        }
+    }
+}
