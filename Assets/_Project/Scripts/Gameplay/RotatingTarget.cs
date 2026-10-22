@@ -10,9 +10,10 @@ public class RotatingTarget : MonoBehaviour
     [SerializeField, Range(0.1f, 30f)] private float blockAngle = 2.75f;
 
     // Góc tính theo hệ tọa độ của bia (0 = chĩa thẳng xuống khi bia chưa quay); buttDistance là khoảng cách từ tâm bia đến đuôi dao.
-    private readonly List<(float angle, float buttDistance)> _embeddedKnives = new();
+    private readonly List<(Transform knife, float angle, float buttDistance)> _embeddedKnives = new();
     private float _angle;
 
+    public float Radius => radius;
     public float SurfaceY => transform.position.y - radius;
     public float MaximumStepTime => Mathf.Min(1f / 120f, blockAngle / Mathf.Max(1f, Mathf.Abs(speed)));
 
@@ -32,7 +33,7 @@ public class RotatingTarget : MonoBehaviour
     {
         buttY = float.PositiveInfinity;
         var centerY = transform.position.y;
-        foreach (var (angle, buttDistance) in _embeddedKnives)
+        foreach (var (_, angle, buttDistance) in _embeddedKnives)
         {
             var knifeButtY = centerY - buttDistance;
             if (tipY >= knifeButtY && knifeButtY < buttY && IsBlocking(angle))
@@ -48,7 +49,29 @@ public class RotatingTarget : MonoBehaviour
     public void EmbedKnife(Transform knife, float buttY)
     {
         knife.SetParent(transform, true);
-        _embeddedKnives.Add((-_angle, transform.position.y - buttY));
+        _embeddedKnives.Add((knife, -_angle, transform.position.y - buttY));
+    }
+
+    // Cắm dao ở góc cục bộ bất kỳ, mũi dao hướng vào tâm; dùng cho dao cắm sẵn đầu stage.
+    public void AddEmbeddedKnife(Transform knife, float localAngle, float pivotDistance, float buttDistance)
+    {
+        knife.SetParent(transform, false);
+        knife.localPosition = Quaternion.Euler(0f, 0f, localAngle) * Vector3.down * pivotDistance;
+        knife.localRotation = Quaternion.Euler(0f, 0f, localAngle);
+        _embeddedKnives.Add((knife, localAngle, buttDistance));
+    }
+
+    public void ClearEmbeddedKnives()
+    {
+        foreach (var (knife, _, _) in _embeddedKnives)
+        {
+            if (knife)
+            {
+                Destroy(knife.gameObject);
+            }
+        }
+
+        _embeddedKnives.Clear();
     }
 
     private bool IsBlocking(float localAngle)
@@ -69,7 +92,7 @@ public class RotatingTarget : MonoBehaviour
         Gizmos.DrawLine(center, center + Quaternion.Euler(0f, 0f, -blockAngle) * Vector3.down * zoneLength);
 
         // Phần lộ ra ngoài gỗ của mỗi dao đã cắm; màu đỏ khi đang chặn đường ném.
-        foreach (var (angle, buttDistance) in _embeddedKnives)
+        foreach (var (_, angle, buttDistance) in _embeddedKnives)
         {
             var direction = Quaternion.Euler(0f, 0f, angle + _angle) * Vector3.down;
             Gizmos.color = IsBlocking(angle) ? Color.red : Color.green;

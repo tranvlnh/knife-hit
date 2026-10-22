@@ -31,7 +31,7 @@ Xấp xỉ: đuôi dao đã cắm được xem như nằm ngay dưới tâm (b�
 4. Đặt Min/Max cùng bằng 0.15, rồi cùng bằng 0.6: kết quả thắng/thua theo góc không đổi, chỉ vị trí dừng khi thua khác.
 5. Chạm nhanh khi dao còn bay: không có dao thứ hai bay cùng lúc.
 6. Giới hạn FPS ở 30 và 60 (`Application.targetFrameRate`): cùng một kiểu ném phải cho cùng kết quả.
-7. Stop rồi Play để chơi lại. Chưa có giao diện Replay ở bước này.
+7. Chơi lại bằng context menu "Replay" của component `GameSession` (chưa có HUD ở bước này).
 
 Không chạy automated tests. Chủ dự án duyệt gameplay thủ công.
 

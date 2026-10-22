@@ -1,10 +1,10 @@
-using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 // ReSharper disable once CheckNamespace
 public class KnifeLauncher : MonoBehaviour
 {
+    [SerializeField] private GameSession session;
     [SerializeField] private GameObject knifePrefab;
     [SerializeField] private Transform target;
     [SerializeField, Min(0.01f)] private float throwSpeed = 14f;
@@ -18,22 +18,17 @@ public class KnifeLauncher : MonoBehaviour
     private Transform _currentKnife;
     private RotatingTarget _rotatingTarget;
     private bool _isFlying;
-    private bool _inputEnabled = true;
+    private bool _isStopped;
     private float _landingTipY;
-
-    public event Action<Transform> KnifeLanded;
-    public event Action<Transform> KnifeHitKnife;
-
-    public bool HasFailed { get; private set; }
 
     private float TipY => _currentKnife.position.y + knifeTipOffset;
 
-    private void Start()
+    private void Awake()
     {
         _rotatingTarget = target ? target.GetComponent<RotatingTarget>() : null;
-        if (!knifePrefab || !_rotatingTarget)
+        if (!session || !knifePrefab || !_rotatingTarget)
         {
-            Debug.LogError("Assign the knife prefab and a Target with RotatingTarget.", this);
+            Debug.LogError("Assign the GameSession, the knife prefab and a Target with RotatingTarget.", this);
             enabled = false;
             return;
         }
@@ -43,23 +38,20 @@ public class KnifeLauncher : MonoBehaviour
         {
             Debug.LogError("Place KnifeLauncher below the target and align their X positions.", this);
             enabled = false;
-            return;
         }
-
-        SpawnReadyKnife();
     }
 
     private void Update()
     {
-        if (!_inputEnabled || HasFailed)
+        if (_isStopped)
         {
             return;
         }
 
-        if (!_isFlying && WasPressedThisFrame())
+        if (!_isFlying && _currentKnife && WasPressedThisFrame() && session.TryAcceptThrow())
         {
             // Chỉ lấy ngẫu nhiên một lần cho mỗi lần ném được chấp nhận, không lấy lại khi dao đang bay.
-            var depth = Mathf.Clamp(UnityEngine.Random.Range(minEmbedDepth, maxEmbedDepth), 0f, knifeLength - 0.1f);
+            var depth = Mathf.Clamp(Random.Range(minEmbedDepth, maxEmbedDepth), 0f, knifeLength - 0.1f);
             _landingTipY = _rotatingTarget.SurfaceY + depth;
             _isFlying = true;
         }
@@ -80,21 +72,36 @@ public class KnifeLauncher : MonoBehaviour
             remainingTime -= stepTime;
         }
 
-        if (remainingTime > 0f && !HasFailed)
+        if (remainingTime > 0f && !_isStopped)
         {
             _rotatingTarget.AdvanceRotation(remainingTime);
         }
     }
 
-    public void SetInputEnabled(bool value)
+    // Xóa dao đang bay hoặc dao vừa thua còn sót lại, rồi chuẩn bị dao đầu tiên của stage.
+    public void ResetForStage()
     {
-        _inputEnabled = value;
+        if (_currentKnife)
+        {
+            Destroy(_currentKnife.gameObject);
+        }
+
+        _isStopped = false;
+        SpawnReadyKnife();
     }
 
-    private void SpawnReadyKnife()
+    public void SpawnReadyKnife()
     {
         _currentKnife = Instantiate(knifePrefab, transform.position, Quaternion.identity).transform;
         _isFlying = false;
+    }
+
+    // Dao cắm sẵn dùng độ sâu giữa Min/Max để mọi stage trông giống nhau mỗi lần chơi.
+    public void SpawnEmbeddedKnife(float localAngle)
+    {
+        var tipDistance = _rotatingTarget.Radius - (minEmbedDepth + maxEmbedDepth) * 0.5f;
+        var knife = Instantiate(knifePrefab).transform;
+        _rotatingTarget.AddEmbeddedKnife(knife, localAngle, tipDistance + knifeTipOffset, tipDistance + knifeLength);
     }
 
     private static bool WasPressedThisFrame()
@@ -114,10 +121,9 @@ public class KnifeLauncher : MonoBehaviour
         {
             // Dừng tại đuôi dao chặn, nhưng không kéo lùi dao bị chạm từ bên hông.
             SetTipY(Mathf.Max(buttY, previousTipY));
-            HasFailed = true;
-            _inputEnabled = false;
             _isFlying = false;
-            KnifeHitKnife?.Invoke(_currentKnife);
+            _isStopped = true;
+            session.HandleKnifeHitKnife();
             return;
         }
 
@@ -128,9 +134,9 @@ public class KnifeLauncher : MonoBehaviour
         }
 
         _rotatingTarget.EmbedKnife(_currentKnife, tipY - knifeLength);
-        var landedKnife = _currentKnife;
-        SpawnReadyKnife();
-        KnifeLanded?.Invoke(landedKnife);
+        _currentKnife = null;
+        _isFlying = false;
+        session.HandleSuccessfulThrow();
     }
 
     private void SetTipY(float tipY)
