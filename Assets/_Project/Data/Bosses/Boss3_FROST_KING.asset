@@ -1,0 +1,57 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e29284e757d76064fb82d3c2159fe0b4, type: 3}
+  m_Name: Boss3_FROST_KING
+  m_EditorClassIdentifier: Assembly-CSharp::BossConfig
+  displayName: FROST KING
+  targetSprite: {fileID: 21300000, guid: 76874a4c7e8cc594da513387cb3c2433, type: 3}
+  targetTint: {r: 0.7, g: 0.85, b: 1, a: 1}
+  phases:
+  - stage: {fileID: 11400000, guid: 05ae306a4bfea424c91e3bbd0dc652a5, type: 2}
+    windowCycle: 8
+    telegraphSeconds: 1.2
+    guardWindows:
+    - start: 2.5
+      duration: 1.5
+      blockAngleScale: 1
+    wideZoneWindows:
+    - start: 6
+      duration: 1.5
+      blockAngleScale: 2.2
+    bannerText: PHASE 1
+  - stage: {fileID: 11400000, guid: d51d87efd3dbd4a44985b43c89a40531, type: 2}
+    windowCycle: 8
+    telegraphSeconds: 1.2
+    guardWindows:
+    - start: 2.5
+      duration: 1.5
+      blockAngleScale: 1
+    wideZoneWindows:
+    - start: 5.5
+      duration: 2
+      blockAngleScale: 2.5
+    bannerText: PHASE 2
+  - stage: {fileID: 11400000, guid: 3650e24a45e15e547b630a19aaa7226d, type: 2}
+    windowCycle: 9
+    telegraphSeconds: 1.2
+    guardWindows:
+    - start: 2.5
+      duration: 1.5
+      blockAngleScale: 1
+    - start: 8
+      duration: 1
+      blockAngleScale: 1
+    wideZoneWindows:
+    - start: 5
+      duration: 1.8
+      blockAngleScale: 2.8
+    bannerText: PHASE 3

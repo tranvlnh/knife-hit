@@ -16,50 +16,66 @@ public class GameSession : MonoBehaviour
 
     [SerializeField] private KnifeLauncher launcher;
     [SerializeField] private RotatingTarget target;
-    [Tooltip("Các stage theo thứ tự chơi trong một Run")]
-    [SerializeField] private StageConfig[] stages = { };
+    [SerializeField] private PlayerProgress progress;
+    [Tooltip("Hiển thị màu bia theo World/boss; có thể bỏ trống")]
+    [SerializeField] private BossEncounter encounter;
+    [Tooltip("Nền theo World; có thể bỏ trống")]
+    [SerializeField] private SpriteRenderer background;
     [Tooltip("Thời gian (giây) dừng giữa hai stage")]
     [SerializeField, Min(0f)] private float transitionDuration = 0.8f;
+    [Tooltip("Sau khi bắt đầu Run hoặc stage mới, bỏ qua chạm trong khoảng này để một lần chạm không vừa bấm nút vừa ném")]
+    [SerializeField, Min(0f)] private float inputLockSeconds = 0.15f;
 
     private State _stateBeforePause;
+    private LevelConfig _level;
     private int _stageIndex;
     private float _transitionTimeLeft;
+    private float _inputUnlockTime;
 
     // Chỉ dành cho HUD và feedback; kết quả gameplay luôn đi qua các lời gọi trực tiếp bên dưới.
     public event Action Changed;
 
     public State CurrentState { get; private set; }
     public int KnivesRemaining { get; private set; }
+    public LevelConfig CurrentLevel => _level;
     public int StageNumber => _stageIndex + 1;
-    public int StageCount => stages.Length;
+    public int StageCount => _level ? _level.StageCount : 0;
+    public float RunSeconds { get; private set; }
+    public PlayerProgress.WinResult LastResult { get; private set; }
+
+    private void Awake()
+    {
+        // Android mặc định 30 FPS và tự tắt màn hình khi không chạm; cả hai đều làm hỏng cảm giác ném.
+        Application.targetFrameRate = 60;
+        Screen.sleepTimeout = SleepTimeout.NeverSleep;
+    }
 
     private void Start()
     {
-        if (!launcher || !launcher.isActiveAndEnabled || !target || stages.Length == 0 ||
-            Array.Exists(stages, stage => !stage))
+        if (!launcher || !launcher.isActiveAndEnabled || !target || !progress || !progress.isActiveAndEnabled)
         {
-            Debug.LogError("Assign an enabled KnifeLauncher, the RotatingTarget and every StageConfig.", this);
+            Debug.LogError("Assign an enabled KnifeLauncher, PlayerProgress and the RotatingTarget.", this);
             enabled = false;
             return;
         }
 
-        // Bia vẫn quay phía sau màn Start; mọi lần chạm đều bị TryAcceptThrow từ chối cho tới khi bấm Play.
-        _stageIndex = 0;
-        StartStage(State.Menu);
+        ReturnToMenu();
     }
 
     private void Update()
     {
-        if (CurrentState != State.Transition)
+        if (CurrentState == State.Playing)
         {
-            return;
+            RunSeconds += Time.deltaTime;
         }
-
-        _transitionTimeLeft -= Time.deltaTime;
-        if (_transitionTimeLeft <= 0f)
+        else if (CurrentState == State.Transition)
         {
-            _stageIndex++;
-            StartStage(State.Playing);
+            _transitionTimeLeft -= Time.deltaTime;
+            if (_transitionTimeLeft <= 0f)
+            {
+                _stageIndex++;
+                StartStage(State.Playing);
+            }
         }
     }
 
@@ -106,28 +122,55 @@ public class GameSession : MonoBehaviour
         NotifyChanged();
     }
 
-    public void Play()
+    // Về menu: bia quay xem trước Level hiện tại phía sau các màn Home/Map/Knives.
+    public void ReturnToMenu()
     {
-        if (CurrentState != State.Menu)
+        _level = progress.CurrentLevel;
+        _stageIndex = 0;
+        StartStage(State.Menu);
+    }
+
+    // Bắt đầu một Run mới ở Level đã mở; Level khóa bị bỏ qua.
+    public void StartLevel(LevelConfig level)
+    {
+        if (!level || !progress.IsLevelUnlocked(level))
         {
             return;
         }
 
-        CurrentState = State.Playing;
-        NotifyChanged();
+        _level = level;
+        StartRun();
     }
 
+    public void StartNextLevel()
+    {
+        var next = _level ? progress.GetNextLevel(_level) : null;
+        if (next)
+        {
+            StartLevel(next);
+        }
+    }
+
+    // Chơi lại Level hiện tại từ stage đầu (Retry/Replay).
     [ContextMenu("Replay")]
     public void StartRun()
     {
+        if (!_level)
+        {
+            return;
+        }
+
         _stageIndex = 0;
+        RunSeconds = 0f;
+        LastResult = default;
         StartStage(State.Playing);
     }
 
     // KnifeLauncher gọi khi nhận một lần chạm; trả về false nghĩa là bỏ qua lần chạm đó.
     public bool TryAcceptThrow()
     {
-        if (CurrentState != State.Playing || KnivesRemaining == 0)
+        if (CurrentState != State.Playing || KnivesRemaining == 0 || Time.unscaledTime < _inputUnlockTime ||
+            target.IsThrowGated)
         {
             return false;
         }
@@ -143,7 +186,7 @@ public class GameSession : MonoBehaviour
         {
             launcher.SpawnReadyKnife();
         }
-        else if (_stageIndex < stages.Length - 1)
+        else if (_stageIndex < _level.StageCount - 1)
         {
             // Dao cuối vẫn cắm trên bia cho tới khi stage sau xóa nó.
             CurrentState = State.Transition;
@@ -151,6 +194,8 @@ public class GameSession : MonoBehaviour
         }
         else
         {
+            // Mỗi Run chỉ ghi thưởng đúng một lần, vào lúc chuyển sang Victory.
+            LastResult = progress.RecordWin(_level, _level.CalculateStars(RunSeconds), RunSeconds);
             CurrentState = State.Victory;
         }
 
@@ -165,8 +210,10 @@ public class GameSession : MonoBehaviour
 
     private void StartStage(State initialState)
     {
-        var stage = stages[_stageIndex];
-        target.BeginStage(stage);
+        var stage = _level.GetStage(_stageIndex);
+        var phase = _level.GetPhase(_stageIndex);
+        target.BeginStage(stage, phase);
+        ApplyTheme();
         for (var i = 0; i < stage.InitialKnifeCount; i++)
         {
             launcher.SpawnEmbeddedKnife(stage.GetInitialKnifeAngle(i));
@@ -174,14 +221,45 @@ public class GameSession : MonoBehaviour
 
         KnivesRemaining = stage.RequiredKnives;
         CurrentState = initialState;
+        _inputUnlockTime = Time.unscaledTime + inputLockSeconds;
         launcher.ResetForStage();
         NotifyChanged();
     }
 
+    private void ApplyTheme()
+    {
+        var world = _level.World;
+        if (background && world)
+        {
+            if (world.Background)
+            {
+                background.sprite = world.Background;
+            }
+
+            background.color = world.BackgroundTint;
+        }
+
+        if (encounter)
+        {
+            var tint = world ? world.TargetTint : Color.white;
+            var boss = _level.IsBoss ? _level.Boss : null;
+            var bossSprite = boss ? boss.TargetSprite : null;
+            encounter.SetTargetSprite(bossSprite);
+            // Hình boss riêng đã có màu sẵn, nên không nhân thêm tint của World/boss.
+            encounter.SetBaseColor(bossSprite ? Color.white : boss ? tint * boss.TargetTint : tint);
+        }
+    }
+
     private void NotifyChanged()
     {
-        // Tạm thời thay cho HUD khi duyệt thủ công.
-        Debug.Log($"{CurrentState}: stage {StageNumber}/{StageCount}, knives {KnivesRemaining}", this);
+        LogState();
         Changed?.Invoke();
+    }
+
+    // Chỉ chạy trong Editor để bản build không cấp phát chuỗi ở mỗi lần ném.
+    [System.Diagnostics.Conditional("UNITY_EDITOR")]
+    private void LogState()
+    {
+        Debug.Log($"{CurrentState}: {(_level ? _level.DisplayName : "-")} stage {StageNumber}/{StageCount}, knives {KnivesRemaining}", this);
     }
 }

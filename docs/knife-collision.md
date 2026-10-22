@@ -23,6 +23,17 @@ Va chạm được tính bằng hình học, không dùng Physics2D. Dao luôn b
 
 Xấp xỉ: đuôi dao đã cắm được xem như nằm ngay dưới tâm (bỏ qua `cos` của góc nhỏ hơn vài độ).
 
+## Luật boss
+
+Boss dùng cùng thao tác chạm và cùng mô hình va chạm hình học. Chỉ có hai luật phụ, đều cấu hình bằng dữ liệu trong `BossPhase` (xem `BossConfig.cs`), xác định và không dùng ngẫu nhiên nào ngoài độ sâu cắm.
+
+Cả hai luật tính theo `RotatingTarget.StageTime` (chỉ tiến khi `KnifeLauncher` gọi `AdvanceRotation`), nên đóng băng khi tạm dừng và không phụ thuộc FPS. Các cửa sổ lặp theo `windowCycle`; mỗi cửa sổ có `start`, `duration` và được báo hiệu trước `telegraphSeconds` (mặc định 1.2 s, dài hơn thời gian dao bay ~0.4 s) bằng màu bia nhấp nháy và dòng cảnh báo trên HUD (`BossEncounter` chỉ hiển thị, không quyết định).
+
+- **Guard**: trong cửa sổ đang hoạt động, `RotatingTarget.IsThrowGated` là `true` và `GameSession.TryAcceptThrow` trả `false`. Lần chạm bị bỏ qua, không mất dao, không thua. Dao đã bay trước khi Guard bật vẫn được xử lý bình thường.
+- **Wide Zone (Danger Zone)**: trong cửa sổ đang hoạt động, `IsBlocking` dùng `blockAngle × blockAngleScale` thay vì `blockAngle`. Chỉ vùng chặn của dao đã cắm rộng hơn; công thức "mũi dao vượt qua đuôi dao chặn" không đổi. Vì hệ số ≥ 1, `MaximumStepTime` (tính theo `blockAngle` gốc) vẫn đủ nhỏ.
+
+Ba boss: Lv10 "Stump" chỉ đổi tốc độ/đảo chiều và dao cắm sẵn dày hơn (không cửa sổ); Lv20 "Sand Guardian" thêm Guard; Lv30 "Frost King" thêm cả Guard và Wide Zone cùng đảo chiều nhanh. Thông số từng pha nằm trong `docs/level-table.md`. Khi tạo cửa sổ mới, giữ cửa sổ đầu tiên của chu kỳ bắt đầu sau ít nhất `telegraphSeconds` kể từ đầu pha.
+
 ## Duyệt thủ công
 
 1. Vào Play, ném nhiều dao cách xa nhau: dao cắm với độ sâu khác nhau, gỗ che đúng phần bị cắm.
@@ -31,7 +42,8 @@ Xấp xỉ: đuôi dao đã cắm được xem như nằm ngay dưới tâm (b�
 4. Đặt Min/Max cùng bằng 0.15, rồi cùng bằng 0.6: kết quả thắng/thua theo góc không đổi, chỉ vị trí dừng khi thua khác.
 5. Chạm nhanh khi dao còn bay: không có dao thứ hai bay cùng lúc.
 6. Giới hạn FPS ở 30 và 60 (`Application.targetFrameRate`): cùng một kiểu ném phải cho cùng kết quả.
-7. Thua hoặc thắng thì bảng kết quả hiện ra; bấm Replay để chơi lại từ đầu.
+7. Thua hoặc thắng thì bảng kết quả hiện ra; bấm Retry để chơi lại Level từ đầu.
+8. Ở boss Lv20/30: khi bia nhấp nháy xanh rồi sáng xanh (Guard), chạm không ném; khi nhấp nháy đỏ rồi sáng đỏ (Danger Zone), dao cắm sát nhau dễ bị chặn hơn.
 
 Không chạy automated tests. Chủ dự án duyệt gameplay thủ công.
 

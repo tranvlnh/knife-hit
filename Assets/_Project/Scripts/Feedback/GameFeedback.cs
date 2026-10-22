@@ -15,6 +15,15 @@ public class GameFeedback : MonoBehaviour
 
     [SerializeField] private GameSession session;
     [SerializeField] private AudioSource source;
+    [Tooltip("Có thể bỏ trống: dùng để lặp nhạc nền của World")]
+    [SerializeField] private AudioSource musicSource;
+    [SerializeField, Range(0f, 1f)] private float musicVolume = 0.3f;
+    [Tooltip("Nhạc nền khi ở menu hoặc khi World không có nhạc")]
+    [SerializeField] private AudioClip menuMusic;
+    [Tooltip("Có thể bỏ trống: để phát tiếng báo Guard / Danger Zone")]
+    [SerializeField] private BossEncounter encounter;
+    [Tooltip("Có thể bỏ trống: để phát tiếng mua / trang bị dao")]
+    [SerializeField] private PlayerProgress progress;
     [SerializeField] private Cue throwCue = new() { volume = 0.25f };
     [Tooltip("Chọn ngẫu nhiên một clip cho mỗi lần dao cắm thành công")]
     [SerializeField] private AudioClip[] woodHitClips = { };
@@ -25,6 +34,11 @@ public class GameFeedback : MonoBehaviour
     [SerializeField] private Cue victoryCue = new() { volume = 0.45f };
     [SerializeField] private Cue clickCue = new() { volume = 0.3f };
     [SerializeField] private Cue toggleCue = new() { volume = 0.3f };
+    [SerializeField] private Cue guardWarningCue = new() { volume = 0.5f };
+    [SerializeField] private Cue dangerWarningCue = new() { volume = 0.5f };
+    [SerializeField] private Cue coinCue = new() { volume = 0.5f };
+    [SerializeField] private Cue buyCue = new() { volume = 0.55f };
+    [SerializeField] private Cue equipCue = new() { volume = 0.4f };
     [Tooltip("Tiếng báo thua phát sau tiếng va chạm")]
     [SerializeField, Min(0f)] private float runFailedDelay = 0.3f;
     [SerializeField] private Button[] clickButtons = { };
@@ -36,6 +50,10 @@ public class GameFeedback : MonoBehaviour
     [SerializeField, Min(0f)] private float hitPulse = 0.06f;
     [SerializeField, Min(0f)] private float stageClearPulse = 0.12f;
     [SerializeField, Min(0.01f)] private float pulseDuration = 0.14f;
+    [Tooltip("Bia giật lên (world unit) theo hướng ném khi dao cắm; chỉ dịch object hình ảnh")]
+    [SerializeField, Min(0f)] private float hitRecoil = 0.06f;
+    [Tooltip("Rung điện thoại khi thua (Android)")]
+    [SerializeField] private bool vibrateOnFail = true;
     [Tooltip("Biên độ rung camera (world unit) khi thua")]
     [SerializeField, Min(0f)] private float failShake = 0.2f;
     [SerializeField, Min(0.01f)] private float failShakeDuration = 0.35f;
@@ -47,6 +65,10 @@ public class GameFeedback : MonoBehaviour
     private float _pulseElapsed = float.PositiveInfinity;
     private float _shakeElapsed = float.PositiveInfinity;
     private Vector3 _cameraBasePosition;
+    private Vector3 _visualBasePosition;
+    private string _previousWarning = "";
+    private int _previousCoins;
+    private KnifeSkin _previousSkin;
 
     private void Awake()
     {
@@ -65,6 +87,11 @@ public class GameFeedback : MonoBehaviour
             _cameraBasePosition = cameraTransform.localPosition;
         }
 
+        if (targetVisual)
+        {
+            _visualBasePosition = targetVisual.localPosition;
+        }
+
         foreach (var button in clickButtons)
         {
             button.onClick.AddListener(() => Play(clickCue));
@@ -79,17 +106,31 @@ public class GameFeedback : MonoBehaviour
     private void OnEnable()
     {
         session.Changed += OnSessionChanged;
+        if (progress)
+        {
+            progress.Changed += OnProgressChanged;
+            _previousCoins = progress.Coins;
+            _previousSkin = progress.EquippedSkin;
+        }
+
         Remember();
+        UpdateMusic();
     }
 
     private void OnDisable()
     {
         session.Changed -= OnSessionChanged;
+        if (progress)
+        {
+            progress.Changed -= OnProgressChanged;
+        }
+
         _pulseElapsed = float.PositiveInfinity;
         _shakeElapsed = float.PositiveInfinity;
         if (targetVisual)
         {
             targetVisual.localScale = Vector3.one;
+            targetVisual.localPosition = _visualBasePosition;
         }
 
         if (cameraTransform)
@@ -100,13 +141,16 @@ public class GameFeedback : MonoBehaviour
 
     private void LateUpdate()
     {
+        UpdateWarningCue();
         if (targetVisual && _pulseElapsed < pulseDuration)
         {
             _pulseElapsed += Time.deltaTime;
-            var scale = _pulseElapsed < pulseDuration
-                ? 1f + _pulseAmount * Mathf.Sin(_pulseElapsed / pulseDuration * Mathf.PI)
-                : 1f;
-            targetVisual.localScale = Vector3.one * scale;
+            var wave = _pulseElapsed < pulseDuration ? Mathf.Sin(_pulseElapsed / pulseDuration * Mathf.PI) : 0f;
+            targetVisual.localScale = Vector3.one * (1f + _pulseAmount * wave);
+            // Bia xoay quanh tâm, nên dịch ở hệ thế giới: đổi hướng "lên" sang tọa độ cục bộ của object cha.
+            var parent = targetVisual.parent;
+            var up = parent ? parent.InverseTransformDirection(Vector3.up) : Vector3.up;
+            targetVisual.localPosition = _visualBasePosition + up * (hitRecoil * wave * (_pulseAmount / Mathf.Max(hitPulse, 0.0001f)));
         }
 
         if (cameraTransform && _shakeElapsed < failShakeDuration)
@@ -153,16 +197,96 @@ public class GameFeedback : MonoBehaviour
                     PlayWoodHit();
                     Pulse(stageClearPulse);
                     Play(victoryCue);
+                    StartCoroutine(PlayCoinLater());
                     break;
                 case GameSession.State.GameOver:
                     _shakeElapsed = 0f;
                     Play(clashCue);
+                    Vibrate();
                     StartCoroutine(PlayRunFailedLater());
                     break;
             }
         }
 
         Remember();
+        UpdateMusic();
+    }
+
+    private void OnProgressChanged()
+    {
+        if (progress.Coins < _previousCoins)
+        {
+            Play(buyCue);
+        }
+        else if (progress.EquippedSkin != _previousSkin)
+        {
+            Play(equipCue);
+        }
+
+        _previousCoins = progress.Coins;
+        _previousSkin = progress.EquippedSkin;
+    }
+
+    // Phát tiếng báo đúng một lần khi cảnh báo mới xuất hiện (rỗng -> INCOMING, hoặc đổi loại).
+    private void UpdateWarningCue()
+    {
+        if (!encounter)
+        {
+            return;
+        }
+
+        var warning = session.CurrentState == GameSession.State.Playing ? encounter.Warning : "";
+        if (warning != _previousWarning)
+        {
+            if (warning == "GUARD INCOMING")
+            {
+                Play(guardWarningCue);
+            }
+            else if (warning == "DANGER ZONE INCOMING")
+            {
+                Play(dangerWarningCue);
+            }
+
+            _previousWarning = warning;
+        }
+    }
+
+    private void UpdateMusic()
+    {
+        if (!musicSource)
+        {
+            return;
+        }
+
+        var level = session.CurrentLevel;
+        var clip = session.CurrentState != GameSession.State.Menu && level && level.World && level.World.Music
+            ? level.World.Music
+            : menuMusic;
+        if (musicSource.clip == clip)
+        {
+            return;
+        }
+
+        musicSource.clip = clip;
+        musicSource.volume = musicVolume;
+        musicSource.loop = true;
+        if (clip)
+        {
+            musicSource.Play();
+        }
+        else
+        {
+            musicSource.Stop();
+        }
+    }
+
+    private IEnumerator PlayCoinLater()
+    {
+        yield return new WaitForSeconds(0.6f);
+        if (session.CurrentState == GameSession.State.Victory && session.LastResult.CoinsEarned > 0)
+        {
+            Play(coinCue);
+        }
     }
 
     private void Remember()
@@ -179,6 +303,16 @@ public class GameFeedback : MonoBehaviour
         {
             Play(runFailedCue);
         }
+    }
+
+    private void Vibrate()
+    {
+#if UNITY_ANDROID && !UNITY_EDITOR
+        if (vibrateOnFail)
+        {
+            Handheld.Vibrate();
+        }
+#endif
     }
 
     private void Pulse(float amount)

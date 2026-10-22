@@ -11,11 +11,19 @@ public class RotatingTarget : MonoBehaviour
     // Góc tính theo hệ tọa độ của bia (0 = chĩa thẳng xuống khi bia chưa quay); buttDistance là khoảng cách từ tâm bia đến đuôi dao.
     private readonly List<(Transform knife, float angle, float buttDistance)> _embeddedKnives = new();
     private StageConfig _stage;
+    private BossPhase _rules;
     private float _angle;
     private float _stageTime;
 
     public float Radius => radius;
     public float SurfaceY => transform.position.y - radius;
+    // Thời gian bia đã quay trong stage hiện tại; chỉ tiến khi KnifeLauncher gọi AdvanceRotation nên đóng băng khi tạm dừng.
+    public float StageTime => _stageTime;
+    public BossPhase Rules => _rules;
+    // Guard của boss đang hoạt động: KnifeLauncher/GameSession bỏ qua lần chạm ném.
+    public bool IsThrowGated => _rules != null && _rules.GetGuardState(_stageTime) == WindowState.Active;
+    // Wide Zone của boss làm vùng chặn rộng hơn; luôn tính theo StageTime nên không phụ thuộc FPS.
+    public float BlockAngleScale => _rules != null ? _rules.GetBlockAngleScale(_stageTime) : 1f;
     public float MaximumStepTime =>
         Mathf.Min(1f / 120f, blockAngle / Mathf.Max(1f, _stage ? _stage.MaximumAbsoluteSpeed : 0f));
 
@@ -25,10 +33,11 @@ public class RotatingTarget : MonoBehaviour
     }
 
     // Xóa dao cũ và chạy lại chu kỳ quay từ đầu; chưa có stage thì bia đứng yên.
-    public void BeginStage(StageConfig stage)
+    public void BeginStage(StageConfig stage, BossPhase rules = null)
     {
         ClearEmbeddedKnives();
         _stage = stage;
+        _rules = rules;
         _stageTime = 0f;
     }
 
@@ -93,7 +102,7 @@ public class RotatingTarget : MonoBehaviour
 
     private bool IsBlocking(float localAngle)
     {
-        return Mathf.Abs(Mathf.DeltaAngle(0f, localAngle + _angle)) < blockAngle;
+        return Mathf.Abs(Mathf.DeltaAngle(0f, localAngle + _angle)) < blockAngle * BlockAngleScale;
     }
 
     private void OnDrawGizmos()

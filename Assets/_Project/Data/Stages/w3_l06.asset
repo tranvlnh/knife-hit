@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a35f93fec04a9594d97bd63d20ecc6a4, type: 3}
+  m_Name: w3_l06
+  m_EditorClassIdentifier: Assembly-CSharp::StageConfig
+  requiredKnives: 12
+  initialKnifeAngles:
+  - 242
+  - 314
+  - 26
+  - 98
+  - 170
+  rotationSegments:
+  - speed: 246.99998
+    duration: 1.8
+    blendTime: 0.4
+  - speed: -152
+    duration: 1.8
+    blendTime: 0.5
+  - speed: 304
+    duration: 1.2
+    blendTime: 0.4

@@ -50,3 +50,22 @@ Dao giữ nguyên canvas trong suốt; tọa độ Transform là giữa canvas. 
 3. Khi gameplay đã được ráp, nghe trên điện thoại khi ném nhanh, cắm dao cuối, va dao và chuyển màn; giảm volume nếu tiếng dồn gây chói. Kiểm tra mute và tiếp tục sau khi app trở lại foreground.
 
 Không chạy automated tests. Scene, package và project settings không cần thay đổi cho bộ asset này.
+
+## Asset Campaign (đã tạo và nối vào game)
+
+Tạo bằng script Python (Pillow): tái tạo từ art có sẵn hoặc vẽ thủ tục, KHÔNG phải hình AI; nên thay bằng art tay nếu cần chất lượng cao hơn. Nối vào game bằng `Knife Hit > Apply Generated Assets` (`Editor/AssetWiring.cs`, chạy lại được; chỉ đổi trường hình/nhạc, không đụng thông số màn). Không chạy khi đang ở Play mode.
+
+| Hạng mục | File | Nối vào |
+| --- | --- | --- |
+| 3 bia boss | `Art/Targets/target_boss_*.png` | `BossConfig.targetSprite` (`BossEncounter.SetTargetSprite`) |
+| Khiên Guard, vành đỏ Danger Zone | `Art/Overlays/guard_shield.png`, `danger_ring.png` | `BossEncounter.guardOverlay/dangerOverlay` (con của `Target/Visual`); thay "nêm" bằng vành đỏ quanh bia |
+| Nền World 2, 3 | `Art/Backgrounds/background_desert.png`, `background_frost.png` | `WorldConfig.background` |
+| 8 skin dao (tô lại từ dao chuẩn, cùng canvas/hình học) | `Art/Knives/knife_*.png` | `KnifeSkin.sprite`, tint = trắng |
+| Icon khóa, coin, sao đủ/thiếu, boss | `Art/Icons/` | `LevelButtonView` (khóa, boss, 3 sao), icon coin ở màn Knives |
+| Khung nút / panel / thẻ skin (9-slice) | `Art/UI/ui_*.png` | Image của mọi Button, thẻ skin, khung gợi ý |
+| SFX báo Guard / Danger Zone, nhận coin, mua dao, trang bị | `Audio/SFX/boss_guard_warning.wav`, `boss_danger_warning.wav`, `coin_collect.wav`, `knife_buy.wav`, `knife_equip.wav` | `GameFeedback` (cue mới) |
+| Nhạc nền 3 World (lặp, tổng hợp) | `Audio/Music/music_*.wav` | `WorldConfig.music`; `GameFeedback.musicSource` (menu dùng nhạc forest) |
+
+`CampaignBuilder` đã cập nhật để dùng các asset này nếu chạy lại. SFX/nhạc là âm tổng hợp đơn giản, chưa nghe duyệt; volume nhạc mặc định 0.3.
+
+Font mặc định không có glyph tiếng Việt và glyph sao (★), nên mọi chuỗi UI là tiếng Anh; sao hiển thị bằng icon.

@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aee9607c6309e6143ad190219c1880a0, type: 3}
+  m_Name: w3_boss
+  m_EditorClassIdentifier: Assembly-CSharp::LevelConfig
+  levelId: w3_boss
+  displayName: 'BOSS: FROST KING'
+  world: {fileID: 11400000, guid: db9e71ad4894fdd4e8a6d67d5be022d0, type: 2}
+  stage: {fileID: 0}
+  boss: {fileID: 11400000, guid: e0d87bfdf7708e841b06448b4cdf0806, type: 2}
+  coinReward: 200
+  starBonusCoins: 20
+  twoStarSeconds: 95.200005
+  threeStarSeconds: 56
+  unlockSkin: {fileID: 11400000, guid: 323f742688205b74aa84e861b2c7911e, type: 2}
+  hintId: hint_wide
+  hintText: 'DANGER ZONE glows red: embedded knives
+
+    block a wider area. Be careful!'

@@ -1,6 +1,6 @@
 # Knife Hit: Architecture and Delivery Plan
 
-Status: Proposed architecture for review. Product scope below reflects the user's answers; gameplay implementation has not started.
+Status: The scope below is the original five-stage demo plan. The project has since grown into a 30-level campaign (3 worlds, bosses at levels 10/20/30, coins, stars, knife skins, saved progress, Home / Level Map / Knives screens). The current architecture is described in `CLAUDE.md`, the vocabulary in `CONTEXT.md`, and boss rules in `docs/knife-collision.md`. Where this document says "five stages", "no stage selection", "no bosses/shop/skins" or "persist only sound", the campaign supersedes it; the lifecycle rules (one flying knife, input gating, pause/resume with Continue, transition handling) still apply.
 
 ## Confirmed Product Scope
 

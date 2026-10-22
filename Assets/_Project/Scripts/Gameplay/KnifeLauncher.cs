@@ -1,4 +1,6 @@
+using System.Collections;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 
 // ReSharper disable once CheckNamespace
@@ -6,6 +8,8 @@ public class KnifeLauncher : MonoBehaviour
 {
     [SerializeField] private GameSession session;
     [SerializeField] private GameObject knifePrefab;
+    [Tooltip("Skin đang trang bị quyết định hình dao; không ảnh hưởng hình học va chạm")]
+    [SerializeField] private PlayerProgress progress;
     [SerializeField] private Transform target;
     [SerializeField, Min(0.01f)] private float throwSpeed = 14f;
     [SerializeField, Min(0f)] private float minEmbedDepth = 0.15f;
@@ -14,6 +18,9 @@ public class KnifeLauncher : MonoBehaviour
     [SerializeField] private float knifeTipOffset = 0.791f;
     [Tooltip("Chiều dài (world unit) phần dao đặc từ mũi đến đuôi cán, ở scale 1.")]
     [SerializeField, Min(0.2f)] private float knifeLength = 1.527f;
+    [Tooltip("Thời gian dao mới trượt lên bệ ném; chỉ là hiệu ứng, có thể ném ngay")]
+    [SerializeField, Min(0f)] private float readySlideSeconds = 0.08f;
+    [SerializeField, Min(0f)] private float readySlideDistance = 0.6f;
 
     private Transform _currentKnife;
     private RotatingTarget _rotatingTarget;
@@ -26,9 +33,9 @@ public class KnifeLauncher : MonoBehaviour
     private void Awake()
     {
         _rotatingTarget = target ? target.GetComponent<RotatingTarget>() : null;
-        if (!session || !knifePrefab || !_rotatingTarget)
+        if (!session || !knifePrefab || !progress || !_rotatingTarget)
         {
-            Debug.LogError("Assign the GameSession, the knife prefab and a Target with RotatingTarget.", this);
+            Debug.LogError("Assign the GameSession, the knife prefab, PlayerProgress and a Target with RotatingTarget.", this);
             enabled = false;
             return;
         }
@@ -93,25 +100,88 @@ public class KnifeLauncher : MonoBehaviour
 
     public void SpawnReadyKnife()
     {
-        _currentKnife = Instantiate(knifePrefab, transform.position, Quaternion.identity).transform;
+        var knife = Instantiate(knifePrefab, transform.position, Quaternion.identity);
+        progress.EquippedSkin.ApplyTo(knife);
+        _currentKnife = knife.transform;
         _isFlying = false;
+        if (readySlideSeconds > 0f)
+        {
+            StartCoroutine(SlideIn(knife.transform));
+        }
+    }
+
+    // Hiệu ứng thuần hình ảnh: ngừng ngay khi dao được ném, vì tọa độ va chạm chỉ dựa vào mũi dao.
+    private IEnumerator SlideIn(Transform knife)
+    {
+        var home = transform.position;
+        for (var elapsed = 0f; elapsed < readySlideSeconds; elapsed += Time.deltaTime)
+        {
+            if (!knife || knife != _currentKnife || _isFlying)
+            {
+                break;
+            }
+
+            var t = elapsed / readySlideSeconds;
+            knife.position = home + Vector3.down * (readySlideDistance * (1f - t));
+            knife.localScale = Vector3.one * Mathf.Lerp(0.8f, 1f, t);
+            yield return null;
+        }
+
+        if (knife)
+        {
+            knife.localScale = Vector3.one;
+            if (knife == _currentKnife && !_isFlying)
+            {
+                knife.position = home;
+            }
+        }
+    }
+
+    // Dao thua bật ngược xuống và rơi khỏi màn hình; chỉ trình bày, trạng thái thua đã được báo.
+    private static IEnumerator FallAway(Transform knife)
+    {
+        var velocity = new Vector3(Random.Range(-1.5f, 1.5f), -3f, 0f);
+        var spin = Random.Range(360f, 720f) * (Random.value < 0.5f ? -1f : 1f);
+        for (var elapsed = 0f; knife && elapsed < 1.2f; elapsed += Time.deltaTime)
+        {
+            velocity.y -= 18f * Time.deltaTime;
+            knife.position += velocity * Time.deltaTime;
+            knife.Rotate(0f, 0f, spin * Time.deltaTime);
+            yield return null;
+        }
     }
 
     // Dao cắm sẵn dùng độ sâu giữa Min/Max để mọi stage trông giống nhau mỗi lần chơi.
     public void SpawnEmbeddedKnife(float localAngle)
     {
         var tipDistance = _rotatingTarget.Radius - (minEmbedDepth + maxEmbedDepth) * 0.5f;
-        var knife = Instantiate(knifePrefab).transform;
+        var knifeObject = Instantiate(knifePrefab);
+        progress.EquippedSkin.ApplyTo(knifeObject);
+        var knife = knifeObject.transform;
         _rotatingTarget.AddEmbeddedKnife(knife, localAngle, tipDistance + knifeTipOffset, tipDistance + knifeLength);
     }
 
+    // Lần chạm đặt lên nút UI (ví dụ Pause) không bao giờ là lần ném.
     private static bool WasPressedThisFrame()
     {
         var touchPressed = Touchscreen.current != null &&
                            Touchscreen.current.primaryTouch.press.wasPressedThisFrame;
+        if (touchPressed)
+        {
+            return !IsOverUi(Touchscreen.current.primaryTouch.touchId.ReadValue());
+        }
+
         var mousePressed = Mouse.current != null &&
                            Mouse.current.leftButton.wasPressedThisFrame;
-        return touchPressed || mousePressed;
+        return mousePressed && !IsOverUi(-1);
+    }
+
+    private static bool IsOverUi(int pointerId)
+    {
+        var eventSystem = EventSystem.current;
+        return eventSystem && (pointerId < 0
+            ? eventSystem.IsPointerOverGameObject()
+            : eventSystem.IsPointerOverGameObject(pointerId));
     }
 
     private void MoveFlyingKnife(float distance)
@@ -124,6 +194,7 @@ public class KnifeLauncher : MonoBehaviour
             SetTipY(Mathf.Max(buttY, previousTipY));
             _isFlying = false;
             _isStopped = true;
+            StartCoroutine(FallAway(_currentKnife));
             session.HandleKnifeHitKnife();
             return;
         }
