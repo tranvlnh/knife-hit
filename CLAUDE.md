@@ -12,7 +12,7 @@ Unity **6000.6.5f1** 2D project (URP, Input System) for an offline, portrait And
 
 ## Workflow
 
-- Open the project through Unity Hub, load `Assets/_Project/Scenes/GamePlay.unity`, and enter Play mode. The build scene list still points at `SampleScene.unity`.
+- Open the project through Unity Hub, load `Assets/_Project/Scenes/GamePlay.unity`, and enter Play mode. The build scene list contains only `GamePlay.unity`.
 - Build with **File > Build Profiles** (Android, portrait). Build an APK early and iterate on a real phone. No build scripts, CI, formatter or linter exist.
 - Only one Editor instance may have the project open. Close the interactive Editor before launching another one against this project.
 - Unity-specific agent skills live in `.claude/skills/` (e.g. `unity-cli`, `create-2d-physics`, `ui-ugui`); consult the relevant one before Editor or package work.
