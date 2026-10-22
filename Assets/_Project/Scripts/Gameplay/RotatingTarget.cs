@@ -23,7 +23,7 @@ public class RotatingTarget : MonoBehaviour
     // Guard của boss đang hoạt động: KnifeLauncher/GameSession bỏ qua lần chạm ném.
     public bool IsThrowGated => _rules != null && _rules.GetGuardState(_stageTime) == WindowState.Active;
     // Wide Zone của boss làm vùng chặn rộng hơn; luôn tính theo StageTime nên không phụ thuộc FPS.
-    public float BlockAngleScale => _rules != null ? _rules.GetBlockAngleScale(_stageTime) : 1f;
+    private float BlockAngleScale => _rules?.GetBlockAngleScale(_stageTime) ?? 1f;
     public float MaximumStepTime =>
         Mathf.Min(1f / 120f, blockAngle / Mathf.Max(1f, _stage ? _stage.MaximumAbsoluteSpeed : 0f));
 
@@ -87,7 +87,7 @@ public class RotatingTarget : MonoBehaviour
         _embeddedKnives.Add((knife, localAngle, buttDistance));
     }
 
-    public void ClearEmbeddedKnives()
+    private void ClearEmbeddedKnives()
     {
         foreach (var (knife, _, _) in _embeddedKnives)
         {

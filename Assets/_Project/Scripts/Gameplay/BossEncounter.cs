@@ -77,8 +77,18 @@ public class BossEncounter : MonoBehaviour
         var guard = rules.GetGuardState(time);
         var wide = rules.GetWideZoneState(time);
         var flash = Mathf.PingPong(Time.time * telegraphFlashHz, 1f);
-        SetOverlay(guardOverlay, guard == WindowState.Active ? 1f : guard == WindowState.Telegraph ? flash : 0f);
-        SetOverlay(dangerOverlay, wide == WindowState.Active ? 1f : wide == WindowState.Telegraph ? flash : 0f);
+        SetOverlay(guardOverlay, guard switch
+        {
+            WindowState.Active => 1f,
+            WindowState.Telegraph => flash,
+            _ => 0f
+        });
+        SetOverlay(dangerOverlay, wide switch
+        {
+            WindowState.Active => 1f,
+            WindowState.Telegraph => flash,
+            _ => 0f
+        });
 
         // Guard quan trọng hơn vì chặn cả lần ném; Wide Zone chỉ làm vùng chặn rộng hơn.
         if (guard != WindowState.Idle)

@@ -1,3 +1,4 @@
+using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -76,20 +77,20 @@ public class MenuScreens : MonoBehaviour
         }
     }
 
-    public void ShowHome()
+    private void ShowHome()
     {
         _page = SceneFlow.MenuPage.Home;
         Refresh();
     }
 
-    public void ShowMap()
+    private void ShowMap()
     {
         _page = SceneFlow.MenuPage.Map;
         mapScreen.SelectWorldOf(progress.CurrentLevel);
         Refresh();
     }
 
-    public void ShowKnives()
+    private void ShowKnives()
     {
         _page = SceneFlow.MenuPage.Knives;
         Refresh();
@@ -130,6 +131,10 @@ public class MenuScreens : MonoBehaviour
             case SceneFlow.MenuPage.Knives:
                 inventoryScreen.Refresh();
                 break;
+            case SceneFlow.MenuPage.Home:
+                break;
+            default:
+                throw new ArgumentOutOfRangeException();
         }
     }
 }
