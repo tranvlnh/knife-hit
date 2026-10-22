@@ -21,6 +21,11 @@ public class LevelButtonView : MonoBehaviour
     [SerializeField] private Color newColor = new(0.95f, 0.75f, 0.25f);
     [SerializeField] private Color clearedColor = new(0.35f, 0.7f, 0.4f);
     [SerializeField] private Color bossColor = new(0.8f, 0.3f, 0.25f);
+    [Tooltip("Có thể bỏ trống: sprite nền theo trạng thái, thay cho việc chỉ đổi màu")]
+    [SerializeField] private Sprite lockedSprite;
+    [SerializeField] private Sprite newSprite;
+    [SerializeField] private Sprite clearedSprite;
+    [SerializeField] private Sprite bossSprite;
 
     public Button Button => button;
     public LevelConfig Level { get; private set; }
@@ -54,5 +59,10 @@ public class LevelButtonView : MonoBehaviour
         }
 
         background.color = !unlocked ? lockedColor : level.IsBoss ? bossColor : stars > 0 ? clearedColor : newColor;
+        var sprite = !unlocked ? lockedSprite : level.IsBoss ? bossSprite : stars > 0 ? clearedSprite : newSprite;
+        if (sprite)
+        {
+            background.sprite = sprite;
+        }
     }
 }
