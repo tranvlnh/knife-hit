@@ -6,10 +6,10 @@ public class RotatingTarget : MonoBehaviour
 {
     [SerializeField] private float speed = 5f;
     [SerializeField, Min(0.01f)] private float radius = 1.5f;
-    [Tooltip("An embedded knife closer than this angle to the throw line blocks the flying knife.")]
+    [Tooltip("Độ lệch chặn dao")]
     [SerializeField, Range(0.1f, 30f)] private float blockAngle = 2.75f;
 
-    // Angle is target-local (0 = straight down at zero rotation); butt distance is measured from the center.
+    // Góc tính theo hệ tọa độ của bia (0 = chĩa thẳng xuống khi bia chưa quay); buttDistance là khoảng cách từ tâm bia đến đuôi dao.
     private readonly List<(float angle, float buttDistance)> _embeddedKnives = new();
     private float _angle;
 
@@ -27,7 +27,7 @@ public class RotatingTarget : MonoBehaviour
         transform.rotation = Quaternion.Euler(0f, 0f, _angle);
     }
 
-    // Finds the lowest butt among embedded knives that point at the throw line and that a tip at tipY has reached.
+    // Tìm đuôi dao thấp nhất trong các dao đã cắm nằm trên đường ném mà mũi dao ở độ cao tipY đã chạm tới.
     public bool TryGetBlockingKnife(float tipY, out float buttY)
     {
         buttY = float.PositiveInfinity;
@@ -44,7 +44,7 @@ public class RotatingTarget : MonoBehaviour
         return buttY < float.PositiveInfinity;
     }
 
-    // The knife must hang straight down under the center.
+    // Dao phải đang ở ngay dưới tâm bia, chĩa thẳng xuống.
     public void EmbedKnife(Transform knife, float buttY)
     {
         knife.SetParent(transform, true);
@@ -62,13 +62,13 @@ public class RotatingTarget : MonoBehaviour
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(center, radius);
 
-        // The block zone stays fixed around the throw line while the target rotates.
+        // Vùng chặn đứng yên quanh đường ném khi bia quay.
         var zoneLength = radius * 2f;
         Gizmos.color = Color.cyan;
         Gizmos.DrawLine(center, center + Quaternion.Euler(0f, 0f, blockAngle) * Vector3.down * zoneLength);
         Gizmos.DrawLine(center, center + Quaternion.Euler(0f, 0f, -blockAngle) * Vector3.down * zoneLength);
 
-        // Exposed part of each embedded knife; red while it blocks the throw line.
+        // Phần lộ ra ngoài gỗ của mỗi dao đã cắm; màu đỏ khi đang chặn đường ném.
         foreach (var (angle, buttDistance) in _embeddedKnives)
         {
             var direction = Quaternion.Euler(0f, 0f, angle + _angle) * Vector3.down;
