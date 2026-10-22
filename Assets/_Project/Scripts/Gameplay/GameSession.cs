@@ -21,7 +21,6 @@ public class GameSession : MonoBehaviour
     public event Action Changed;
 
     public State CurrentState { get; private set; }
-    public int RunScore { get; private set; }
     public int KnivesRemaining { get; private set; }
 
     private void Start()
@@ -39,7 +38,6 @@ public class GameSession : MonoBehaviour
     [ContextMenu("Replay")]
     public void StartRun()
     {
-        RunScore = 0;
         StartStage();
     }
 
@@ -58,7 +56,6 @@ public class GameSession : MonoBehaviour
 
     public void HandleSuccessfulThrow()
     {
-        RunScore++;
         if (KnivesRemaining > 0)
         {
             launcher.SpawnReadyKnife();
@@ -94,7 +91,7 @@ public class GameSession : MonoBehaviour
     private void NotifyChanged()
     {
         // Tạm thời thay cho HUD khi duyệt thủ công.
-        Debug.Log($"{CurrentState}: score {RunScore}, knives {KnivesRemaining}", this);
+        Debug.Log($"{CurrentState}: knives {KnivesRemaining}", this);
         Changed?.Invoke();
     }
 }

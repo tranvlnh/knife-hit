@@ -25,16 +25,8 @@ A knife attached to the target, either present at the start of a stage or added 
 _Avoid_: Flying knife when referring to an attached knife.
 
 **Successful Throw (Lần ném thành công)**:
-A throw that embeds a new knife in the target without hitting an embedded knife. Each successful throw adds one point to the run score.
-_Avoid_: Hit without specifying whether the knife hit the target or another knife.
-
-**Run Score (Điểm lượt chơi)**:
-The number of successful throws accumulated across stages in the current run. It resets to zero when a new run starts.
-_Avoid_: Stage score, currency.
-
-**High Score (Điểm cao)**:
-The highest run score achieved on the device, retained between runs and application launches.
-_Avoid_: Leaderboard, total lifetime score.
+A throw that embeds a new knife in the target without hitting an embedded knife. The game keeps no score; progress is measured only by stages cleared.
+_Avoid_: Hit without specifying whether the knife hit the target or another knife; score, points.
 
 **Paused Run (Lượt chơi tạm dừng)**:
 A run suspended while the player leaves the application, with its target and flying knife held in place. Returning to the application requires an explicit Continue action before gameplay resumes.
