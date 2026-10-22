@@ -40,7 +40,7 @@ public class KnifeInventoryScreen : MonoBehaviour
 
             var skin = skins[i];
             var unlockLevel = progress.Campaign.FindUnlockLevel(skin);
-            var lockedLabel = unlockLevel ? $"CLEAR {unlockLevel.DisplayName}" : "LOCKED";
+            var lockedLabel = unlockLevel ? unlockLevel.IsBoss ? "BOSS REWARD" : $"CLEAR {unlockLevel.DisplayName}" : "LOCKED";
             cards[i].Bind(skin, progress.IsOwned(skin), progress.EquippedSkin == skin, progress.CanBuy(skin), lockedLabel);
         }
     }

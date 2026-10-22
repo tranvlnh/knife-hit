@@ -16,26 +16,31 @@ using Object = UnityEngine.Object;
 public static class UiRebuilder
 {
     private const string ArtPath = "Assets/_Project/Art/UI/";
+    private const string CozyPath = "Assets/_Project/Art/UI/Cozy/";
     private const string GamePlayPath = "Assets/_Project/Scenes/GamePlay.unity";
     private const string MainMenuPath = "Assets/_Project/Scenes/MainMenu.unity";
     private const string CampaignPath = "Assets/_Project/Data/Campaign.asset";
 
-    private static readonly Color Green = new(0.24f, 0.72f, 0.32f);
-    private static readonly Color Blue = new(0.22f, 0.5f, 0.92f);
-    private static readonly Color Purple = new(0.58f, 0.38f, 0.88f);
+    // Green / Blue / Purple là màu nhuộm lên nút kem của Cozy UI Pack; Red và Wood chọn sprite riêng của pack.
+    private static readonly Color Green = new(0.55f, 0.83f, 0.22f);
+    private static readonly Color Blue = new(0.4f, 0.68f, 0.95f);
+    private static readonly Color Purple = new(0.75f, 0.55f, 0.92f);
     private static readonly Color Red = new(0.88f, 0.3f, 0.3f);
-    private static readonly Color Slate = new(0.36f, 0.44f, 0.58f);
+    private static readonly Color Wood = new(0.36f, 0.44f, 0.58f);
     private static readonly Color Gold = new(1f, 0.8f, 0.25f);
     private static readonly Color Ink = new(0.1f, 0.13f, 0.2f);
-    private static readonly Color PillColor = new(0.08f, 0.1f, 0.17f, 0.82f);
+    private static readonly Color Brown = new(0.33f, 0.15f, 0.1f);
+    private static readonly Color Cream = new(1f, 1f, 0.92f);
 
-    private static Sprite _button, _panel, _card, _circle, _pill;
+    private static Sprite _btnMain, _btnWood, _btnRed, _btnSquare, _btnRound;
+    private static Sprite _plank, _banner, _tan, _note, _popupWood, _popupRed;
     private static Sprite _coin, _starFull, _starEmpty, _lock, _boss;
     private static Sprite _pause, _back, _home, _soundOn, _soundOff, _retry, _levels;
 
     [MenuItem("Knife Hit/Rebuild UI and Scenes")]
     public static void Build()
     {
+        ImportCozy();
         GenerateSprites();
         LoadSprites();
         var audio = RebuildGamePlay();
@@ -54,8 +59,6 @@ public static class UiRebuilder
     private static void GenerateSprites()
     {
         Directory.CreateDirectory(ArtPath);
-        Save("ui_circle", 128, Fill(p => (p - new Vector2(0.5f, 0.5f)).magnitude < 0.5f), 0);
-        Save("ui_pill", 128, Fill(p => RoundBox(p, 0.5f, 0.5f, 0.5f, 0.5f, 0.34f)), 44);
         Save("icon_pause", 128, Fill(p => RoundBox(p, 0.355f, 0.5f, 0.085f, 0.3f, 0.04f) || RoundBox(p, 0.645f, 0.5f, 0.085f, 0.3f, 0.04f)), 0);
         Save("icon_back", 128, Fill(p => Capsule(p, new Vector2(0.62f, 0.78f), new Vector2(0.36f, 0.5f), 0.075f) ||
                                          Capsule(p, new Vector2(0.36f, 0.5f), new Vector2(0.62f, 0.22f), 0.075f)), 0);
@@ -176,15 +179,63 @@ public static class UiRebuilder
         importer.SaveAndReimport();
     }
 
+    private static Sprite LoadCozy(string name) => AssetDatabase.LoadAssetAtPath<Sprite>(CozyPath + name + ".png");
+
+    // Cắt 9 mảnh cho sprite của Cozy UI Pack (Left, Bottom, Right, Top theo pixel của ảnh gốc).
+    private static void ImportCozy()
+    {
+        var borders = new (string name, Vector4 border)[]
+        {
+            ("RoundButton2_white", new Vector4(75f, 75f, 75f, 75f)),
+            ("RoundButton2_wood", new Vector4(75f, 75f, 75f, 75f)),
+            ("RoundButton1_wood", Vector4.zero),
+            ("SquareButton2_red", new Vector4(40f, 40f, 40f, 40f)),
+            ("SquareButton2_white", new Vector4(40f, 40f, 40f, 40f)),
+            ("InventoryHotbar", new Vector4(40f, 40f, 40f, 40f)),
+            ("WoodenContainer1", new Vector4(60f, 60f, 60f, 60f)),
+            ("Container1", new Vector4(70f, 70f, 70f, 70f)),
+            ("NoteContainerSimple", new Vector4(100f, 40f, 40f, 40f)),
+            ("CardRegular1_wood", new Vector4(45f, 50f, 45f, 80f)),
+            ("CardRegular1_red", new Vector4(45f, 50f, 45f, 80f))
+        };
+        foreach (var (name, border) in borders)
+        {
+            var path = CozyPath + name + ".png";
+            var importer = (TextureImporter)AssetImporter.GetAtPath(path);
+            if (!importer)
+            {
+                Debug.LogError($"Missing {path}. Copy the Cozy UI Pack sprites into {CozyPath}.");
+                continue;
+            }
+
+            importer.textureType = TextureImporterType.Sprite;
+            importer.spriteImportMode = SpriteImportMode.Single;
+            importer.alphaIsTransparency = true;
+            importer.mipmapEnabled = false;
+            importer.spriteBorder = border;
+            var settings = new TextureImporterSettings();
+            importer.ReadTextureSettings(settings);
+            settings.spriteMeshType = SpriteMeshType.FullRect;
+            importer.SetTextureSettings(settings);
+            importer.SaveAndReimport();
+        }
+    }
+
     private static Sprite Load(string name) => AssetDatabase.LoadAssetAtPath<Sprite>(ArtPath + name + ".png");
 
     private static void LoadSprites()
     {
-        _button = Load("ui_button");
-        _panel = Load("ui_panel");
-        _card = Load("ui_card");
-        _circle = Load("ui_circle");
-        _pill = Load("ui_pill");
+        _btnMain = LoadCozy("RoundButton2_white");
+        _btnWood = LoadCozy("RoundButton2_wood");
+        _btnRed = LoadCozy("SquareButton2_red");
+        _btnSquare = LoadCozy("SquareButton2_white");
+        _btnRound = LoadCozy("RoundButton1_wood");
+        _plank = LoadCozy("InventoryHotbar");
+        _banner = LoadCozy("WoodenContainer1");
+        _tan = LoadCozy("Container1");
+        _note = LoadCozy("NoteContainerSimple");
+        _popupWood = LoadCozy("CardRegular1_wood");
+        _popupRed = LoadCozy("CardRegular1_red");
         _coin = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/_Project/Art/Icons/icon_coin.png");
         _starFull = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/_Project/Art/Icons/icon_star_full.png");
         _starEmpty = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/_Project/Art/Icons/icon_star_empty.png");
@@ -239,44 +290,44 @@ public static class UiRebuilder
         safe.gameObject.AddComponent<SafeAreaFitter>();
 
         // Thanh trên: Pause | tên Level | số dao.
-        var pause = RoundButton("PauseButton", safe, _pause, Slate, 120f);
+        var pause = RoundButton("PauseButton", safe, _pause, Wood, 120f);
         Anchor(pause.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(36f, -36f), new Vector2(120f, 120f));
-        var levelPill = Img("LevelPill", safe, _pill, PillColor, Image.Type.Sliced);
-        Anchor(levelPill.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -46f), new Vector2(520f, 100f));
-        var levelText = Text("LevelText", levelPill.transform, "LEVEL 1", 46f, Color.white);
-        Fill(levelText.rectTransform, 16f);
+        var levelPill = Img("LevelPill", safe, _plank, Color.white, Image.Type.Sliced);
+        Anchor(levelPill.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -46f), new Vector2(570f, 100f));
+        var levelText = Text("LevelText", levelPill.transform, "LEVEL 1", 46f, Brown);
+        Fill(levelText.rectTransform, 38f);
         levelText.enableAutoSizing = true;
-        levelText.fontSizeMin = 28f;
+        levelText.fontSizeMin = 18f;
         levelText.fontSizeMax = 46f;
 
-        var knivesPill = Img("KnivesPill", safe, _pill, PillColor, Image.Type.Sliced);
-        Anchor(knivesPill.transform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-36f, -46f), new Vector2(230f, 100f));
+        var knivesPill = Img("KnivesPill", safe, _plank, Color.white, Image.Type.Sliced);
+        Anchor(knivesPill.transform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-30f, -46f), new Vector2(200f, 100f));
         var knifeIcon = Img("KnifeIcon", knivesPill.transform, null, Color.white, Image.Type.Simple);
         knifeIcon.preserveAspect = true;
         Anchor(knifeIcon.transform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(26f, 0f), new Vector2(50f, 82f));
-        var knivesText = Text("KnivesText", knivesPill.transform, "x5", 52f, Gold, TextAlignmentOptions.Right);
-        Anchor(knivesText.transform, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-26f, 0f), new Vector2(130f, 90f));
+        var knivesText = Text("KnivesText", knivesPill.transform, "x5", 52f, Brown, TextAlignmentOptions.Right);
+        Anchor(knivesText.transform, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-24f, 0f), new Vector2(105f, 90f));
 
         var timer = Text("TimerText", safe, "0.0s", 40f, Color.white);
         Anchor(timer.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -164f), new Vector2(900f, 60f));
 
-        var warning = Img("WarningBanner", safe, _pill, new Color(0.85f, 0.2f, 0.2f, 0.92f), Image.Type.Sliced);
+        var warning = Img("WarningBanner", safe, _btnRed, Color.white, Image.Type.Sliced);
         Anchor(warning.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -240f), new Vector2(820f, 96f));
         var warningText = Text("WarningText", warning.transform, "", 44f, Color.white);
         Fill(warningText.rectTransform, 12f);
         warning.gameObject.SetActive(false);
 
-        var hint = Img("HintPanel", safe, _panel, Color.white, Image.Type.Sliced);
+        var hint = Img("HintPanel", safe, _note, Color.white, Image.Type.Sliced);
         Anchor(hint.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -360f), new Vector2(900f, 230f));
-        var hintText = Text("HintText", hint.transform, "", 42f, Color.white);
+        var hintText = Text("HintText", hint.transform, "", 42f, Brown);
         Fill(hintText.rectTransform, 40f);
         hintText.textWrappingMode = TextWrappingModes.Normal;
         hint.gameObject.SetActive(false);
 
         // Pause.
         var pausePanel = Dim("PausePanel", canvas.transform);
-        var pauseCard = Card(pausePanel.transform, new Vector2(820f, 1060f));
-        Title(pauseCard, "PAUSED", 450f);
+        var pauseCard = Card(pausePanel.transform, new Vector2(820f, 1060f), _popupWood);
+        Title(pauseCard, "PAUSED", 450f, Brown);
         var resume = Button("ContinueButton", pauseCard, "RESUME", Green, new Vector2(620f, 150f), 62f);
         Anchor(resume.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 230f), new Vector2(620f, 150f));
         var restart = Button("RestartButton", pauseCard, "RESTART", Blue, new Vector2(620f, 130f), 50f);
@@ -285,14 +336,14 @@ public static class UiRebuilder
         Anchor(levels.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -110f), new Vector2(620f, 130f));
         var home = Button("HomeButton", pauseCard, "HOME", Red, new Vector2(620f, 130f), 50f);
         Anchor(home.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -270f), new Vector2(620f, 130f));
-        var sound = RoundButton("SoundButton", pauseCard, _soundOn, Slate, 110f);
+        var sound = RoundButton("SoundButton", pauseCard, _soundOn, Wood, 110f);
         Anchor(sound.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -425f), new Vector2(110f, 110f));
         pausePanel.gameObject.SetActive(false);
 
         // Result.
         var resultPanel = Dim("ResultPanel", canvas.transform);
-        var resultCard = Card(resultPanel.transform, new Vector2(860f, 1160f));
-        var resultTitle = Title(resultCard, "LEVEL CLEARED", 470f);
+        var resultCard = Card(resultPanel.transform, new Vector2(860f, 1160f), _popupRed);
+        var resultTitle = Title(resultCard, "LEVEL CLEARED", 470f, Color.white);
         var stars = new Image[3];
         for (var i = 0; i < 3; i++)
         {
@@ -303,7 +354,7 @@ public static class UiRebuilder
                 new Vector2((i - 1) * 210f, i == 1 ? 300f : 270f), new Vector2(size, size));
         }
 
-        var detail = Text("ResultDetailText", resultCard, "", 54f, Color.white);
+        var detail = Text("ResultDetailText", resultCard, "", 54f, Brown);
         Anchor(detail.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 60f), new Vector2(740f, 230f));
         detail.textWrappingMode = TextWrappingModes.Normal;
         var next = Button("NextButton", resultCard, "NEXT LEVEL", Green, new Vector2(620f, 140f), 54f);
@@ -409,9 +460,9 @@ public static class UiRebuilder
 
         // ---- Home
         var home = Stretch("HomePanel", safe);
-        var banner = Img("TitleBanner", home, _panel, Color.white, Image.Type.Sliced);
+        var banner = Img("TitleBanner", home, _banner, Color.white, Image.Type.Sliced);
         Anchor(banner.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -200f), new Vector2(880f, 240f));
-        var title = Text("TitleText", banner.transform, "KNIFE HIT", 150f, Gold);
+        var title = Text("TitleText", banner.transform, "KNIFE HIT", 150f, Brown);
         Fill(title.rectTransform, 20f);
 
         var spin = new GameObject("TargetSpin", typeof(RectTransform), typeof(SlowSpin));
@@ -446,26 +497,26 @@ public static class UiRebuilder
         var levelsStat = StatPill("LevelsStat", safe, _levels, 0);
         var starsStat = StatPill("StarsStat", safe, _starFull, 1);
         var coinsStat = StatPill("CoinsStat", safe, _coin, 2);
-        var sound = RoundButton("SoundButton", safe, _soundOn, Slate, 100f);
+        var sound = RoundButton("SoundButton", safe, _soundOn, Wood, 100f);
         Anchor(sound.transform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-30f, -30f), new Vector2(100f, 100f));
 
         // ---- Map
         var map = Stretch("MapPanel", safe);
-        var mapBack = RoundButton("BackButton", map, _back, Slate, 110f);
+        var mapBack = RoundButton("BackButton", map, _back, Wood, 110f);
         Anchor(mapBack.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(30f, -170f), new Vector2(110f, 110f));
-        var worldBanner = Img("WorldBanner", map, _panel, Color.white, Image.Type.Sliced);
+        var worldBanner = Img("WorldBanner", map, _banner, Color.white, Image.Type.Sliced);
         Anchor(worldBanner.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(60f, -160f), new Vector2(760f, 130f));
-        var worldTitle = Text("WorldTitleText", worldBanner.transform, "WORLD", 64f, Gold);
+        var worldTitle = Text("WorldTitleText", worldBanner.transform, "WORLD", 64f, Brown);
         Fill(worldTitle.rectTransform, 12f);
 
         var tabs = new UnityEngine.UI.Button[3];
         for (var i = 0; i < 3; i++)
         {
-            tabs[i] = Button($"WorldTab{i + 1}", map, $"WORLD {i + 1}", Blue, new Vector2(300f, 100f), 40f);
+            tabs[i] = Button($"WorldTab{i + 1}", map, $"WORLD {i + 1}", Wood, new Vector2(300f, 100f), 40f);
             Anchor(tabs[i].transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2((i - 1) * 320f, -320f), new Vector2(300f, 100f));
         }
 
-        var grid = Img("LevelsCard", map, _card, Color.white, Image.Type.Sliced);
+        var grid = Img("LevelsCard", map, _tan, Color.white, Image.Type.Sliced);
         Anchor(grid.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -170f), new Vector2(980f, 1240f));
         var levelButtons = new LevelButtonView[CampaignConfig.LevelsPerWorld];
         for (var i = 0; i < levelButtons.Length; i++)
@@ -476,11 +527,11 @@ public static class UiRebuilder
 
         // ---- Knives
         var knives = Stretch("KnivesPanel", safe);
-        var knivesBack = RoundButton("BackButton", knives, _back, Slate, 110f);
+        var knivesBack = RoundButton("BackButton", knives, _back, Wood, 110f);
         Anchor(knivesBack.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(30f, -170f), new Vector2(110f, 110f));
-        var knivesBanner = Img("KnivesBanner", knives, _panel, Color.white, Image.Type.Sliced);
+        var knivesBanner = Img("KnivesBanner", knives, _banner, Color.white, Image.Type.Sliced);
         Anchor(knivesBanner.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(60f, -160f), new Vector2(760f, 130f));
-        var knivesTitle = Text("KnivesTitleText", knivesBanner.transform, "KNIVES", 64f, Gold);
+        var knivesTitle = Text("KnivesTitleText", knivesBanner.transform, "KNIVES", 64f, Brown);
         Fill(knivesTitle.rectTransform, 12f);
         var coinsText = Text("CoinsText", knives, "COINS 0", 46f, Color.white);
         Anchor(coinsText.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -320f), new Vector2(700f, 70f));
@@ -549,27 +600,26 @@ public static class UiRebuilder
 
     private static (RectTransform pill, TMP_Text value) StatPill(string name, Transform parent, Sprite icon, int index)
     {
-        var pill = Img(name, parent, _pill, PillColor, Image.Type.Sliced);
+        var pill = Img(name, parent, _plank, Color.white, Image.Type.Sliced);
         Anchor(pill.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(30f + index * 276f, -45f), new Vector2(260f, 84f));
-        var iconImage = Img("Icon", pill.transform, icon, Color.white, Image.Type.Simple);
+        var iconImage = Img("Icon", pill.transform, icon, icon == _levels ? Brown : Color.white, Image.Type.Simple);
         iconImage.preserveAspect = true;
         Anchor(iconImage.transform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(18f, 0f), new Vector2(56f, 56f));
-        var value = Text("Value", pill.transform, "0", 46f, Color.white, TextAlignmentOptions.Right);
+        var value = Text("Value", pill.transform, "0", 46f, Brown, TextAlignmentOptions.Right);
         Anchor(value.transform, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-20f, 0f), new Vector2(160f, 70f));
         return (pill.rectTransform, value);
     }
 
     private static LevelButtonView LevelButton(string name, Transform parent, Vector2 position)
     {
-        var button = Button(name, parent, "", Gold, new Vector2(440f, 205f), 40f);
+        var button = Button(name, parent, "", Color.white, new Vector2(440f, 205f), 40f, _btnSquare, Brown);
         Anchor(button.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), position, new Vector2(440f, 205f));
         var number = button.GetComponentInChildren<TMP_Text>(true);
         number.name = "NumberText";
         number.enableAutoSizing = false;
         number.fontSize = 76f;
-        number.color = Color.white;
         Anchor(number.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 32f), new Vector2(380f, 100f));
-        var status = Text("StatusText", button.transform, "", 38f, Color.white);
+        var status = Text("StatusText", button.transform, "", 38f, Brown);
         Anchor(status.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -52f), new Vector2(380f, 60f));
 
         var stars = new Image[3];
@@ -597,18 +647,22 @@ public static class UiRebuilder
         SetArray(view, "starIcons", stars);
         Set(view, "starFull", _starFull);
         Set(view, "starEmpty", _starEmpty);
+        SetColor(view, "lockedColor", new Color(0.66f, 0.6f, 0.6f));
+        SetColor(view, "newColor", Color.white);
+        SetColor(view, "clearedColor", new Color(0.72f, 0.95f, 0.55f));
+        SetColor(view, "bossColor", new Color(1f, 0.6f, 0.6f));
         return view;
     }
 
     private static SkinCardView SkinCard(string name, Transform parent, Vector2 position)
     {
-        var card = Img(name, parent, _card, Color.white, Image.Type.Sliced);
+        var card = Img(name, parent, _popupWood, Color.white, Image.Type.Sliced);
         Anchor(card.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), position, new Vector2(310f, 380f));
         var icon = Img("Icon", card.transform, null, Color.white, Image.Type.Simple);
         icon.preserveAspect = true;
-        Anchor(icon.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 85f), new Vector2(120f, 190f));
-        var nameText = Text("NameText", card.transform, "", 38f, Color.white);
-        Anchor(nameText.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -40f), new Vector2(290f, 60f));
+        Anchor(icon.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 20f), new Vector2(110f, 190f));
+        var nameText = Text("NameText", card.transform, "", 38f, Brown);
+        Anchor(nameText.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -14f), new Vector2(280f, 56f));
         nameText.enableAutoSizing = true;
         nameText.fontSizeMin = 24f;
         nameText.fontSizeMax = 38f;
@@ -707,15 +761,21 @@ public static class UiRebuilder
         return tmp;
     }
 
-    private static UnityEngine.UI.Button Button(string name, Transform parent, string label, Color tint, Vector2 size, float fontSize)
+    private static UnityEngine.UI.Button Button(string name, Transform parent, string label, Color tint, Vector2 size, float fontSize,
+        Sprite sprite = null, Color? textColor = null)
     {
-        var image = Img(name, parent, _button, tint, Image.Type.Sliced);
+        // Red và Wood chọn sprite riêng của pack; các màu còn lại nhuộm lên nút kem.
+        var isRed = tint == Red;
+        var isWood = tint == Wood;
+        sprite ??= isRed ? _btnRed : isWood ? _btnWood : _btnMain;
+        var image = Img(name, parent, sprite, isRed || isWood ? Color.white : tint, Image.Type.Sliced);
         image.raycastTarget = true;
         image.rectTransform.sizeDelta = size;
         var button = image.gameObject.AddComponent<UnityEngine.UI.Button>();
         StyleButton(button, image);
-        var text = Text("Label", image.transform, label, fontSize, Color.white);
+        var text = Text("Label", image.transform, label, fontSize, textColor ?? (isWood ? Brown : Color.white));
         Fill(text.rectTransform, 10f);
+        text.rectTransform.offsetMin = new Vector2(10f, 22f);
         text.enableAutoSizing = true;
         text.fontSizeMax = fontSize;
         text.fontSizeMin = Mathf.Max(18f, fontSize * 0.5f);
@@ -724,14 +784,15 @@ public static class UiRebuilder
 
     private static UnityEngine.UI.Button RoundButton(string name, Transform parent, Sprite icon, Color tint, float size)
     {
-        var image = Img(name, parent, _circle, tint, Image.Type.Simple);
+        var image = Img(name, parent, _btnRound, Color.white, Image.Type.Simple);
         image.raycastTarget = true;
-        image.rectTransform.sizeDelta = new Vector2(size, size);
+        image.rectTransform.sizeDelta = new Vector2(size, size * 1.13f);
         var button = image.gameObject.AddComponent<UnityEngine.UI.Button>();
         StyleButton(button, image);
-        var iconImage = Img("Icon", image.transform, icon, Color.white, Image.Type.Simple);
+        var iconImage = Img("Icon", image.transform, icon, Brown, Image.Type.Simple);
         iconImage.preserveAspect = true;
-        Fill(iconImage.rectTransform, size * 0.2f);
+        Anchor(iconImage.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, size * 0.07f),
+            new Vector2(size * 0.58f, size * 0.58f));
         return button;
     }
 
@@ -756,21 +817,30 @@ public static class UiRebuilder
         return dim.rectTransform;
     }
 
-    private static RectTransform Card(Transform parent, Vector2 size)
+    private static RectTransform Card(Transform parent, Vector2 size, Sprite sprite)
     {
-        var card = Img("Card", parent, _panel, Color.white, Image.Type.Sliced);
+        var card = Img("Card", parent, sprite, Color.white, Image.Type.Sliced);
+        // Nhân đôi cỡ viền để phần đầu thẻ đủ cao cho tiêu đề.
+        card.pixelsPerUnitMultiplier = 0.5f;
         Anchor(card.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, size);
         return card.rectTransform;
     }
 
-    private static TMP_Text Title(Transform parent, string text, float y)
+    private static TMP_Text Title(Transform parent, string text, float y, Color color)
     {
-        var title = Text("TitleText", parent, text, 84f, Gold);
+        var title = Text("TitleText", parent, text, 84f, color);
         Anchor(title.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, y), new Vector2(760f, 120f));
         title.enableAutoSizing = true;
         title.fontSizeMin = 40f;
         title.fontSizeMax = 84f;
         return title;
+    }
+
+    private static void SetColor(Object target, string property, Color value)
+    {
+        var so = new SerializedObject(target);
+        so.FindProperty(property).colorValue = value;
+        so.ApplyModifiedPropertiesWithoutUndo();
     }
 
     private static void Set(Object target, string property, Object value)
