@@ -10,8 +10,12 @@ public class GameHUD : MonoBehaviour
     [SerializeField] private PlayerProgress progress;
     [SerializeField] private BossEncounter encounter;
     [SerializeField] private TMP_Text levelText;
-    [SerializeField] private TMP_Text knivesText;
-    [SerializeField] private Image knifeIcon;
+    [Tooltip("Thanh máu của mục tiêu: mỗi trái tim là một dao còn phải ném, tim vỡ là dao đã ném")]
+    [SerializeField] private Image[] hearts = { };
+    [SerializeField] private Sprite heartFull;
+    [SerializeField] private Sprite heartEmpty;
+    [SerializeField, Min(20f)] private float maxHeartSize = 76f;
+    [SerializeField, Min(200f)] private float heartBarWidth = 900f;
     [Tooltip("Cả banner cảnh báo boss; chỉ hiện khi có cảnh báo")]
     [SerializeField] private GameObject warningBanner;
     [SerializeField] private TMP_Text warningText;
@@ -54,7 +58,7 @@ public class GameHUD : MonoBehaviour
 
     private void Awake()
     {
-        if (!session || !progress || !encounter || !levelText || !knivesText || !knifeIcon || !warningBanner ||
+        if (!session || !progress || !encounter || !levelText || hearts.Length == 0 || !heartFull || !heartEmpty || !warningBanner ||
             !warningText || !hintPanel || !hintText || !resultPanel || !resultTitleText || !resultDetailText ||
             !retryButton || !nextButton || !mapButton || !pausePanel || !continueButton || !pauseButton ||
             !pauseRetryButton || !pauseMapButton || !pauseHomeButton)
@@ -215,9 +219,7 @@ public class GameHUD : MonoBehaviour
                 : level.DisplayName;
         }
 
-        knivesText.text = $"x{session.KnivesRemaining}";
-        knifeIcon.sprite = progress.EquippedSkin.Sprite;
-        knifeIcon.color = progress.EquippedSkin.Tint;
+        RefreshHearts();
         ShowHintIfNeeded(state, level);
 
         var isFinished = state is GameSession.State.GameOver or GameSession.State.Victory;
@@ -236,6 +238,19 @@ public class GameHUD : MonoBehaviour
         if (isFinished)
         {
             ShowResult(state == GameSession.State.Victory, level);
+        }
+    }
+
+    private void RefreshHearts()
+    {
+        var total = Mathf.Min(session.StageKnifeTotal, hearts.Length);
+        var remaining = session.KnivesRemaining;
+        var size = total > 0 ? Mathf.Clamp(heartBarWidth / total - 8f, 30f, maxHeartSize) : maxHeartSize;
+        for (var i = 0; i < hearts.Length; i++)
+        {
+            hearts[i].gameObject.SetActive(i < total);
+            hearts[i].sprite = i < remaining ? heartFull : heartEmpty;
+            hearts[i].rectTransform.sizeDelta = new Vector2(size, size);
         }
     }
 

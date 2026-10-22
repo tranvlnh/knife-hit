@@ -36,6 +36,7 @@ public class GameSession : MonoBehaviour
 
     public State CurrentState { get; private set; }
     public int KnivesRemaining { get; private set; }
+    public int StageKnifeTotal { get; private set; }
     public LevelConfig CurrentLevel => _level;
     public int StageNumber => _stageIndex + 1;
     public int StageCount => _level ? _level.StageCount : 0;
@@ -223,6 +224,7 @@ public class GameSession : MonoBehaviour
             launcher.SpawnEmbeddedKnife(stage.GetInitialKnifeAngle(i));
         }
 
+        StageKnifeTotal = stage.RequiredKnives;
         KnivesRemaining = stage.RequiredKnives;
         CurrentState = initialState;
         _inputUnlockTime = Time.unscaledTime + inputLockSeconds;

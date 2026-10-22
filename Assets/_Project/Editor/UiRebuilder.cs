@@ -34,6 +34,7 @@ public static class UiRebuilder
     private static readonly Color Brown = new(0.33f, 0.15f, 0.1f);
     private static readonly Color Cream = new(1f, 1f, 0.92f);
 
+    private static Sprite _heartFull, _heartEmpty;
     private static Sprite _btnGreen, _btnBlue, _btnPurple, _btnOrange, _btnGray, _btnWood, _btnRed, _btnRound, _pillCream;
     private static Sprite _plank, _banner, _tan, _note, _popupWood, _popupRed;
     private static Sprite _coin, _starFull, _starEmpty, _lock, _boss;
@@ -191,6 +192,8 @@ public static class UiRebuilder
             ("RoundButton2_white", new Vector4(75f, 75f, 75f, 75f)),
             ("RoundButton2_wood", new Vector4(75f, 75f, 75f, 75f)),
             ("RoundButton1_wood", Vector4.zero),
+            ("Icon_heart", Vector4.zero),
+            ("Icon_heart_empty", Vector4.zero),
             ("Btn_green", new Vector4(90f, 70f, 90f, 70f)),
             ("Btn_blue", new Vector4(90f, 70f, 90f, 70f)),
             ("Btn_purple", new Vector4(90f, 70f, 90f, 70f)),
@@ -231,6 +234,8 @@ public static class UiRebuilder
 
     private static void LoadSprites()
     {
+        _heartFull = LoadCozy("Icon_heart");
+        _heartEmpty = LoadCozy("Icon_heart_empty");
         _btnGreen = LoadCozy("Btn_green");
         _btnBlue = LoadCozy("Btn_blue");
         _btnPurple = LoadCozy("Btn_purple");
@@ -299,7 +304,7 @@ public static class UiRebuilder
         var safe = Stretch("SafeArea", canvas.transform);
         safe.gameObject.AddComponent<SafeAreaFitter>();
 
-        // Thanh trên: Pause | tên Level | số dao.
+        // Thanh trên: Pause | tên Level; dưới là thanh trái tim.
         var pause = RoundButton("PauseButton", safe, _pause, Wood, 120f);
         Anchor(pause.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(36f, -36f), new Vector2(120f, 120f));
         var levelPill = Img("LevelPill", safe, _pillCream, Color.white, Image.Type.Sliced);
@@ -310,27 +315,39 @@ public static class UiRebuilder
         levelText.fontSizeMin = 18f;
         levelText.fontSizeMax = 46f;
 
-        var knivesPill = Img("KnivesPill", safe, _pillCream, Color.white, Image.Type.Sliced);
-        Anchor(knivesPill.transform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-30f, -46f), new Vector2(200f, 100f));
-        var knifeIcon = Img("KnifeIcon", knivesPill.transform, null, Color.white, Image.Type.Simple);
-        knifeIcon.preserveAspect = true;
-        Anchor(knifeIcon.transform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(26f, 0f), new Vector2(50f, 82f));
-        var knivesText = Text("KnivesText", knivesPill.transform, "x5", 52f, Brown, TextAlignmentOptions.Right);
-        Anchor(knivesText.transform, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-24f, 0f), new Vector2(105f, 90f));
+        // Thanh máu của mục tiêu: mỗi trái tim là một lần ném còn phải trúng.
+        var heartBar = new GameObject("HeartBar", typeof(RectTransform), typeof(HorizontalLayoutGroup)) { layer = 5 };
+        var heartBarRect = (RectTransform)heartBar.transform;
+        heartBarRect.SetParent(safe, false);
+        Anchor(heartBarRect, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -170f), new Vector2(1000f, 84f));
+        var heartLayout = heartBar.GetComponent<HorizontalLayoutGroup>();
+        heartLayout.childAlignment = TextAnchor.MiddleCenter;
+        heartLayout.spacing = 6f;
+        heartLayout.childControlWidth = false;
+        heartLayout.childControlHeight = false;
+        heartLayout.childForceExpandWidth = false;
+        heartLayout.childForceExpandHeight = false;
+        var hearts = new Image[16];
+        for (var i = 0; i < hearts.Length; i++)
+        {
+            hearts[i] = Img($"Heart{i + 1}", heartBarRect, _heartFull, Color.white, Image.Type.Simple);
+            hearts[i].preserveAspect = true;
+            hearts[i].rectTransform.sizeDelta = new Vector2(64f, 64f);
+        }
 
         var timer = Text("TimerText", safe, "0.0s", 40f, Color.white);
         timer.fontSharedMaterial = OutlineMaterial();
-        Anchor(timer.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -164f), new Vector2(900f, 60f));
+        Anchor(timer.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -262f), new Vector2(900f, 60f));
 
         var warning = Img("WarningBanner", safe, _btnRed, Color.white, Image.Type.Sliced);
-        Anchor(warning.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -240f), new Vector2(820f, 96f));
+        Anchor(warning.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -330f), new Vector2(820f, 96f));
         var warningText = Text("WarningText", warning.transform, "", 44f, Color.white);
         warningText.fontSharedMaterial = OutlineMaterial();
         Fill(warningText.rectTransform, 12f);
         warning.gameObject.SetActive(false);
 
         var hint = Img("HintPanel", safe, _note, Color.white, Image.Type.Sliced);
-        Anchor(hint.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -360f), new Vector2(900f, 230f));
+        Anchor(hint.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -440f), new Vector2(900f, 230f));
         var hintText = Text("HintText", hint.transform, "", 42f, Brown);
         Fill(hintText.rectTransform, 40f);
         hintText.textWrappingMode = TextWrappingModes.Normal;
@@ -383,8 +400,9 @@ public static class UiRebuilder
         Set(hud, "progress", progress);
         Set(hud, "encounter", encounter);
         Set(hud, "levelText", levelText);
-        Set(hud, "knivesText", knivesText);
-        Set(hud, "knifeIcon", knifeIcon);
+        SetArray(hud, "hearts", hearts);
+        Set(hud, "heartFull", _heartFull);
+        Set(hud, "heartEmpty", _heartEmpty);
         Set(hud, "warningBanner", warning.gameObject);
         Set(hud, "warningText", warningText);
         Set(hud, "hintPanel", hint.gameObject);
