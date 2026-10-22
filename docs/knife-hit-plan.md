@@ -59,6 +59,8 @@ Move the existing scene and game-owned render/input settings into this layout th
 
 ## Landing Model
 
+> Superseded by `docs/knife-collision.md`: the implemented rule is angular, but a knife fails when its tip passes the butt of a blocking embedded knife, embed depth is random, and the check lives in `RotatingTarget` instead of a separate `ThrowRules`.
+
 Recommended model: fixed vertical flight, a fixed contact plane at the bottom of the target, and angular occupancy rules. This is an authored arcade rule rather than a general rigid-body simulation.
 
 Store embedded knife angles relative to the target. On reaching the contact plane, convert the entry direction into the target's local angle and compare the shortest angular distance to every embedded knife. Reject a landing within the configured exclusion angle. Tune that angle together with knife width, target radius and visual attachment so visible near misses feel fair.
