@@ -6,6 +6,7 @@ public class GameSession : MonoBehaviour
 {
     public enum State
     {
+        Menu,
         Playing,
         Transition,
         Paused,
@@ -42,7 +43,9 @@ public class GameSession : MonoBehaviour
             return;
         }
 
-        StartRun();
+        // Bia vẫn quay phía sau màn Start; mọi lần chạm đều bị TryAcceptThrow từ chối cho tới khi bấm Play.
+        _stageIndex = 0;
+        StartStage(State.Menu);
     }
 
     private void Update()
@@ -56,7 +59,7 @@ public class GameSession : MonoBehaviour
         if (_transitionTimeLeft <= 0f)
         {
             _stageIndex++;
-            StartStage();
+            StartStage(State.Playing);
         }
     }
 
@@ -103,11 +106,22 @@ public class GameSession : MonoBehaviour
         NotifyChanged();
     }
 
+    public void Play()
+    {
+        if (CurrentState != State.Menu)
+        {
+            return;
+        }
+
+        CurrentState = State.Playing;
+        NotifyChanged();
+    }
+
     [ContextMenu("Replay")]
     public void StartRun()
     {
         _stageIndex = 0;
-        StartStage();
+        StartStage(State.Playing);
     }
 
     // KnifeLauncher gọi khi nhận một lần chạm; trả về false nghĩa là bỏ qua lần chạm đó.
@@ -149,7 +163,7 @@ public class GameSession : MonoBehaviour
         NotifyChanged();
     }
 
-    private void StartStage()
+    private void StartStage(State initialState)
     {
         var stage = stages[_stageIndex];
         target.BeginStage(stage);
@@ -159,7 +173,7 @@ public class GameSession : MonoBehaviour
         }
 
         KnivesRemaining = stage.RequiredKnives;
-        CurrentState = State.Playing;
+        CurrentState = initialState;
         launcher.ResetForStage();
         NotifyChanged();
     }
