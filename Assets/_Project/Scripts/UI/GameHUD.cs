@@ -5,6 +5,7 @@ using UnityEngine;
 public class GameHUD : MonoBehaviour
 {
     [SerializeField] private GameSession session;
+    [SerializeField] private TMP_Text stageText;
     [SerializeField] private TMP_Text knivesText;
     [SerializeField] private GameObject resultPanel;
     [SerializeField] private TMP_Text resultTitleText;
@@ -12,7 +13,7 @@ public class GameHUD : MonoBehaviour
 
     private void Awake()
     {
-        if (!session || !knivesText || !resultPanel || !resultTitleText || !replayButton)
+        if (!session || !stageText || !knivesText || !resultPanel || !resultTitleText || !replayButton)
         {
             Debug.LogError("Assign the GameSession and every HUD element.", this);
             enabled = false;
@@ -35,9 +36,10 @@ public class GameHUD : MonoBehaviour
 
     private void Refresh()
     {
+        stageText.text = $"STAGE {session.StageNumber}/{session.StageCount}";
         knivesText.text = $"x{session.KnivesRemaining}";
 
-        var isFinished = session.CurrentState != GameSession.State.Playing;
+        var isFinished = session.CurrentState is GameSession.State.GameOver or GameSession.State.Victory;
         resultPanel.SetActive(isFinished);
         if (isFinished)
         {

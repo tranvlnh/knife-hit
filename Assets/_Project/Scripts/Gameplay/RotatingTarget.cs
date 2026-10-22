@@ -4,27 +4,44 @@ using UnityEngine;
 // ReSharper disable once CheckNamespace
 public class RotatingTarget : MonoBehaviour
 {
-    [SerializeField] private float speed = 5f;
     [SerializeField, Min(0.01f)] private float radius = 1.5f;
     [Tooltip("Độ lệch chặn dao")]
     [SerializeField, Range(0.1f, 30f)] private float blockAngle = 2.75f;
 
     // Góc tính theo hệ tọa độ của bia (0 = chĩa thẳng xuống khi bia chưa quay); buttDistance là khoảng cách từ tâm bia đến đuôi dao.
     private readonly List<(Transform knife, float angle, float buttDistance)> _embeddedKnives = new();
+    private StageConfig _stage;
     private float _angle;
+    private float _stageTime;
 
     public float Radius => radius;
     public float SurfaceY => transform.position.y - radius;
-    public float MaximumStepTime => Mathf.Min(1f / 120f, blockAngle / Mathf.Max(1f, Mathf.Abs(speed)));
+    public float MaximumStepTime =>
+        Mathf.Min(1f / 120f, blockAngle / Mathf.Max(1f, _stage ? _stage.MaximumAbsoluteSpeed : 0f));
 
     private void Awake()
     {
         _angle = transform.eulerAngles.z;
     }
 
+    // Xóa dao cũ và chạy lại chu kỳ quay từ đầu; chưa có stage thì bia đứng yên.
+    public void BeginStage(StageConfig stage)
+    {
+        ClearEmbeddedKnives();
+        _stage = stage;
+        _stageTime = 0f;
+    }
+
     public void AdvanceRotation(float deltaTime)
     {
-        _angle = Mathf.Repeat(_angle + speed * deltaTime, 360f);
+        if (!_stage)
+        {
+            return;
+        }
+
+        // Bước thời gian đã được KnifeLauncher chia nhỏ nên lấy tốc độ ở đầu bước là đủ chính xác.
+        _angle = Mathf.Repeat(_angle + _stage.GetSpeed(_stageTime) * deltaTime, 360f);
+        _stageTime += deltaTime;
         transform.rotation = Quaternion.Euler(0f, 0f, _angle);
     }
 
