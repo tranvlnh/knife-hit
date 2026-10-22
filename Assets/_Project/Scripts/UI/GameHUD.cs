@@ -9,12 +9,11 @@ public class GameHUD : MonoBehaviour
     [SerializeField] private GameSession session;
     [SerializeField] private PlayerProgress progress;
     [SerializeField] private BossEncounter encounter;
-    [SerializeField] private MenuScreens menu;
-    [Tooltip("Chứa các thành phần chỉ hiện khi đang chơi (tên Level, số dao, cảnh báo boss)")]
-    [SerializeField] private GameObject gameplayRoot;
     [SerializeField] private TMP_Text levelText;
     [SerializeField] private TMP_Text knivesText;
     [SerializeField] private Image knifeIcon;
+    [Tooltip("Cả banner cảnh báo boss; chỉ hiện khi có cảnh báo")]
+    [SerializeField] private GameObject warningBanner;
     [SerializeField] private TMP_Text warningText;
     [SerializeField] private GameObject hintPanel;
     [SerializeField] private TMP_Text hintText;
@@ -22,6 +21,10 @@ public class GameHUD : MonoBehaviour
     [SerializeField] private GameObject resultPanel;
     [SerializeField] private TMP_Text resultTitleText;
     [SerializeField] private TMP_Text resultDetailText;
+    [Tooltip("Ba sao theo thứ tự; sáng theo số sao đạt được")]
+    [SerializeField] private Image[] resultStars = { };
+    [SerializeField] private Sprite starFull;
+    [SerializeField] private Sprite starEmpty;
     [SerializeField] private Button retryButton;
     [SerializeField] private Button nextButton;
     [SerializeField] private Button mapButton;
@@ -31,8 +34,12 @@ public class GameHUD : MonoBehaviour
     [SerializeField] private Button pauseButton;
     [SerializeField] private Button pauseRetryButton;
     [SerializeField] private Button pauseMapButton;
+    [SerializeField] private Button pauseHomeButton;
     [Tooltip("Mỗi nút đổi cùng một cài đặt âm thanh; nhãn là TMP_Text con của nút")]
     [SerializeField] private Button[] soundButtons = { };
+    [SerializeField] private Image[] soundIcons = { };
+    [SerializeField] private Sprite soundOnSprite;
+    [SerializeField] private Sprite soundOffSprite;
     [Tooltip("Có thể bỏ trống: đồng hồ Run kèm mốc sao kế tiếp")]
     [SerializeField] private TMP_Text timerText;
     [Tooltip("Chờ trước khi hiện panel kết quả để người chơi kịp thấy dao va chạm / ăn mừng")]
@@ -47,9 +54,10 @@ public class GameHUD : MonoBehaviour
 
     private void Awake()
     {
-        if (!session || !progress || !encounter || !menu || !gameplayRoot || !levelText || !knivesText || !knifeIcon ||
+        if (!session || !progress || !encounter || !levelText || !knivesText || !knifeIcon || !warningBanner ||
             !warningText || !hintPanel || !hintText || !resultPanel || !resultTitleText || !resultDetailText ||
-            !retryButton || !nextButton || !mapButton || !pausePanel || !continueButton || !pauseButton || !pauseRetryButton || !pauseMapButton)
+            !retryButton || !nextButton || !mapButton || !pausePanel || !continueButton || !pauseButton ||
+            !pauseRetryButton || !pauseMapButton || !pauseHomeButton)
         {
             Debug.LogError("Assign the GameSession, PlayerProgress and every HUD element.", this);
             enabled = false;
@@ -63,6 +71,7 @@ public class GameHUD : MonoBehaviour
         pauseButton.onClick.AddListener(session.Pause);
         pauseRetryButton.onClick.AddListener(session.StartRun);
         pauseMapButton.onClick.AddListener(OpenMap);
+        pauseHomeButton.onClick.AddListener(OpenHome);
         foreach (var button in soundButtons)
         {
             button.onClick.AddListener(ToggleSound);
@@ -91,6 +100,7 @@ public class GameHUD : MonoBehaviour
         {
             _lastWarning = warning;
             warningText.text = warning;
+            warningBanner.SetActive(warning.Length > 0);
         }
 
         UpdateTimer();
@@ -109,7 +119,7 @@ public class GameHUD : MonoBehaviour
         if (_hintTimeLeft > 0f)
         {
             _hintTimeLeft -= Time.unscaledDeltaTime;
-            if (_hintTimeLeft <= 0f || session.CurrentState == GameSession.State.Menu)
+            if (_hintTimeLeft <= 0f)
             {
                 _hintTimeLeft = 0f;
                 hintPanel.SetActive(false);
@@ -137,10 +147,10 @@ public class GameHUD : MonoBehaviour
         var goal = seconds <= level.ThreeStarSeconds ? level.ThreeStarSeconds
             : seconds <= level.TwoStarSeconds ? level.TwoStarSeconds
             : 0f;
-        var stars = goal > 0f ? (seconds <= level.ThreeStarSeconds ? 3 : 2) : 1;
+        var stars = seconds <= level.ThreeStarSeconds ? 3 : 2;
         timerText.text = goal > 0f
-            ? $"{seconds:0.0}s  ({stars} STARS UNTIL {goal:0}s)"
-            : $"{seconds:0.0}s  (1 STAR)";
+            ? $"{seconds:0.0}s   {stars}-STAR GOAL {goal:0}s"
+            : $"{seconds:0.0}s";
     }
 
     // Nút Back của Android được Input System báo như phím Escape.
@@ -169,8 +179,12 @@ public class GameHUD : MonoBehaviour
 
     private void OpenMap()
     {
-        menu.ShowMap();
-        session.ReturnToMenu();
+        session.ExitToMenu(SceneFlow.MenuPage.Map);
+    }
+
+    private void OpenHome()
+    {
+        session.ExitToMenu(SceneFlow.MenuPage.Home);
     }
 
     private void ToggleSound()
@@ -180,9 +194,10 @@ public class GameHUD : MonoBehaviour
 
     private void RefreshSound()
     {
-        foreach (var button in soundButtons)
+        var sprite = progress.SoundEnabled ? soundOnSprite : soundOffSprite;
+        foreach (var icon in soundIcons)
         {
-            button.GetComponentInChildren<TMP_Text>(true).text = progress.SoundEnabled ? "SOUND: ON" : "SOUND: OFF";
+            icon.sprite = sprite;
         }
     }
 
@@ -190,7 +205,6 @@ public class GameHUD : MonoBehaviour
     {
         var state = session.CurrentState;
         var level = session.CurrentLevel;
-        gameplayRoot.SetActive(state != GameSession.State.Menu);
         pausePanel.SetActive(state == GameSession.State.Paused);
         pauseButton.gameObject.SetActive(state is GameSession.State.Playing or GameSession.State.Transition);
 
@@ -248,17 +262,28 @@ public class GameHUD : MonoBehaviour
         {
             resultTitleText.text = "FAILED";
             resultDetailText.text = "You hit a knife.";
+            ShowStars(0);
             return;
         }
 
         var result = session.LastResult;
+        ShowStars(result.Stars);
         resultTitleText.text = !next ? "CAMPAIGN COMPLETE" : level.IsBoss ? "BOSS DEFEATED" : "LEVEL CLEARED";
-        var detail = $"STARS {result.Stars}/3   TIME {result.Seconds:0.0}s\n+{result.CoinsEarned} COINS";
+        var detail = $"TIME {result.Seconds:0.0}s\n+{result.CoinsEarned} COINS";
         if (result.UnlockedSkin)
         {
             detail += $"\nNEW KNIFE: {result.UnlockedSkin.DisplayName}";
         }
 
         resultDetailText.text = detail;
+    }
+
+    private void ShowStars(int count)
+    {
+        for (var i = 0; i < resultStars.Length; i++)
+        {
+            resultStars[i].gameObject.SetActive(count > 0);
+            resultStars[i].sprite = i < count ? starFull : starEmpty;
+        }
     }
 }

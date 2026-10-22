@@ -3,10 +3,9 @@ using UnityEngine;
 using UnityEngine.UI;
 
 // ReSharper disable once CheckNamespace
-// Lưới Level của một World; nút Level chỉ gọi GameSession.StartLevel, luật mở khóa nằm ở PlayerProgress.
+// Lưới Level của một World; nút Level chỉ mở scene GamePlay qua SceneFlow, luật mở khóa nằm ở PlayerProgress.
 public class LevelMapScreen : MonoBehaviour
 {
-    [SerializeField] private GameSession session;
     [SerializeField] private PlayerProgress progress;
     [SerializeField] private TMP_Text worldTitleText;
     [SerializeField] private Button[] worldTabs = { };
@@ -17,9 +16,9 @@ public class LevelMapScreen : MonoBehaviour
 
     private void Awake()
     {
-        if (!session || !progress || !worldTitleText || levelButtons.Length == 0)
+        if (!progress || !worldTitleText || levelButtons.Length == 0)
         {
-            Debug.LogError("Assign the GameSession, PlayerProgress, title and level buttons.", this);
+            Debug.LogError("Assign PlayerProgress, title and level buttons.", this);
             enabled = false;
             return;
         }
@@ -33,7 +32,7 @@ public class LevelMapScreen : MonoBehaviour
         foreach (var view in levelButtons)
         {
             var captured = view;
-            view.Button.onClick.AddListener(() => session.StartLevel(captured.Level));
+            view.Button.onClick.AddListener(() => SceneFlow.OpenGameplay(captured.Level));
         }
     }
 

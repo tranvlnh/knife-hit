@@ -6,7 +6,6 @@ public class GameSession : MonoBehaviour
 {
     public enum State
     {
-        Menu,
         Playing,
         Transition,
         Paused,
@@ -59,7 +58,14 @@ public class GameSession : MonoBehaviour
             return;
         }
 
-        ReturnToMenu();
+        // Level do menu chọn; bấm Play trực tiếp scene này trong Editor thì chơi Level hiện tại.
+        _level = SceneFlow.TakePendingLevel(progress.Campaign);
+        if (!_level || !progress.IsLevelUnlocked(_level))
+        {
+            _level = progress.CurrentLevel;
+        }
+
+        StartRun();
     }
 
     private void Update()
@@ -122,12 +128,10 @@ public class GameSession : MonoBehaviour
         NotifyChanged();
     }
 
-    // Về menu: bia quay xem trước Level hiện tại phía sau các màn Home/Map/Knives.
-    public void ReturnToMenu()
+    // Rời scene GamePlay; trang menu mở ra phụ thuộc nơi người chơi đi tiếp.
+    public void ExitToMenu(SceneFlow.MenuPage page)
     {
-        _level = progress.CurrentLevel;
-        _stageIndex = 0;
-        StartStage(State.Menu);
+        SceneFlow.OpenMainMenu(page);
     }
 
     // Bắt đầu một Run mới ở Level đã mở; Level khóa bị bỏ qua.

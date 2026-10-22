@@ -259,7 +259,7 @@ public class GameFeedback : MonoBehaviour
         }
 
         var level = session.CurrentLevel;
-        var clip = session.CurrentState != GameSession.State.Menu && level && level.World && level.World.Music
+        var clip = level && level.World && level.World.Music
             ? level.World.Music
             : menuMusic;
         if (musicSource.clip == clip)

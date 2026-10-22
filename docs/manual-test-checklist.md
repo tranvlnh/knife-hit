@@ -6,7 +6,7 @@ Trạng thái xác minh của phiên làm việc này nằm ở báo cáo cuối
 
 ## Luồng chính (Editor)
 
-1. Mở game lần đầu: Home hiện "PLAY", `LEVELS 0/30 STARS 0 COINS 0`, bia quay phía sau.
+1. Mở game lần đầu (scene MainMenu): Home hiện "PLAY", thanh thông số `0/30`, `0` sao, `0` coin, bia trang trí quay chậm.
 2. LEVELS: World 1 có Level 1 là "NEW", các Level khác "LOCKED"; tab World 2/3 xem được nhưng Level khóa không bấm được.
 3. PLAY: vào Level 1, gợi ý "TAP to throw..." hiện khoảng 4 giây, chỉ lần đầu.
 4. Ném đủ dao: màn kết quả hiện "LEVEL CLEARED", sao, thời gian, coin; nút NEXT LEVEL / RETRY / LEVELS.
@@ -36,10 +36,10 @@ Trạng thái xác minh của phiên làm việc này nằm ở báo cáo cuối
 1. Chạm nhanh nhiều lần khi dao đang bay: chỉ một dao bay; chạm dư bị bỏ qua.
 2. Bấm PLAY / RETRY / NEXT / LEVEL: lần chạm đó không ném dao (có khóa input ngắn sau khi bắt đầu stage).
 3. Ném dao cuối: không thể chạm tiếp; Transition hoặc kết quả hiện đúng một lần.
-4. Home/Map/Knives mở: chạm vào bia hay vùng trống không ném dao.
+4. Scene MainMenu không có gameplay: chạm vùng trống không ném dao. Bấm PLAY/Level chuyển sang scene GamePlay; Pause > LEVELS / HOME quay về MainMenu đúng trang Map / Home.
 5. Background/resume trên điện thoại (Home, khóa màn hình, mở lại): hiện panel Continue; lần chạm Continue không ném dao; bia, dao đang bay và thời gian sao đóng băng đến khi Continue.
 6. Tắt app giữa Run: mở lại về Home, Run không được khôi phục; tiến trình (coin, sao, skin) vẫn còn.
-7. Âm thanh: nút SOUND đổi ON/OFF ở Home và Pause; thoát vào lại vẫn giữ; tắt âm thì mọi tiếng im.
+7. Âm thanh: nút loa đổi ON/OFF ở Home và Pause; thoát vào lại vẫn giữ; tắt âm thì mọi tiếng im.
 
 ## Dữ liệu lưu hỏng (Editor)
 
