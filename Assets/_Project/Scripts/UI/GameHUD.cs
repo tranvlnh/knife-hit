@@ -10,10 +10,13 @@ public class GameHUD : MonoBehaviour
     [SerializeField] private GameObject resultPanel;
     [SerializeField] private TMP_Text resultTitleText;
     [SerializeField] private UnityEngine.UI.Button replayButton;
+    [SerializeField] private GameObject pausePanel;
+    [SerializeField] private UnityEngine.UI.Button continueButton;
 
     private void Awake()
     {
-        if (!session || !stageText || !knivesText || !resultPanel || !resultTitleText || !replayButton)
+        if (!session || !stageText || !knivesText || !resultPanel || !resultTitleText || !replayButton ||
+            !pausePanel || !continueButton)
         {
             Debug.LogError("Assign the GameSession and every HUD element.", this);
             enabled = false;
@@ -21,6 +24,7 @@ public class GameHUD : MonoBehaviour
         }
 
         replayButton.onClick.AddListener(session.StartRun);
+        continueButton.onClick.AddListener(session.Resume);
     }
 
     private void OnEnable()
@@ -38,6 +42,8 @@ public class GameHUD : MonoBehaviour
     {
         stageText.text = $"STAGE {session.StageNumber}/{session.StageCount}";
         knivesText.text = $"x{session.KnivesRemaining}";
+
+        pausePanel.SetActive(session.CurrentState == GameSession.State.Paused);
 
         var isFinished = session.CurrentState is GameSession.State.GameOver or GameSession.State.Victory;
         resultPanel.SetActive(isFinished);

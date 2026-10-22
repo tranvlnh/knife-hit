@@ -43,7 +43,8 @@ public class KnifeLauncher : MonoBehaviour
 
     private void Update()
     {
-        if (_isStopped)
+        // Khi tạm dừng, dao và bia đứng yên; lần chạm Continue cũng không được tính là một lần ném.
+        if (_isStopped || session.CurrentState == GameSession.State.Paused)
         {
             return;
         }

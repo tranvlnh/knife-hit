@@ -8,6 +8,7 @@ public class GameSession : MonoBehaviour
     {
         Playing,
         Transition,
+        Paused,
         GameOver,
         Victory
     }
@@ -19,6 +20,7 @@ public class GameSession : MonoBehaviour
     [Tooltip("Thời gian (giây) dừng giữa hai stage")]
     [SerializeField, Min(0f)] private float transitionDuration = 0.8f;
 
+    private State _stateBeforePause;
     private int _stageIndex;
     private float _transitionTimeLeft;
 
@@ -56,6 +58,49 @@ public class GameSession : MonoBehaviour
             _stageIndex++;
             StartStage();
         }
+    }
+
+    private void OnApplicationPause(bool paused)
+    {
+        if (paused)
+        {
+            Pause();
+        }
+    }
+
+    private void OnApplicationFocus(bool hasFocus)
+    {
+        // Trong Editor, bấm ra ngoài Game view cũng mất focus nên chỉ áp dụng trên thiết bị.
+        if (!hasFocus && !Application.isEditor)
+        {
+            Pause();
+        }
+    }
+
+    // Có thể gọi nhiều lần liên tiếp; chỉ lần đầu trong Playing hoặc Transition có tác dụng.
+    [ContextMenu("Pause")]
+    public void Pause()
+    {
+        if (CurrentState is not (State.Playing or State.Transition))
+        {
+            return;
+        }
+
+        _stateBeforePause = CurrentState;
+        CurrentState = State.Paused;
+        NotifyChanged();
+    }
+
+    [ContextMenu("Resume")]
+    public void Resume()
+    {
+        if (CurrentState != State.Paused)
+        {
+            return;
+        }
+
+        CurrentState = _stateBeforePause;
+        NotifyChanged();
     }
 
     [ContextMenu("Replay")]
