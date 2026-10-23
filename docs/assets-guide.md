@@ -16,11 +16,11 @@ Một bia dùng chung cho cả năm màn, độ khó do dữ liệu màn quyết
 
 | File trong `Assets/_Project/Audio/` | Khi phát | File gốc / gói |
 | --- | --- | --- |
-| `SFX/knife_throw.ogg` | Nhận lệnh ném hợp lệ | `knifeSlice.ogg` / RPG Audio |
-| `SFX/knife_hit_wood_01.ogg` | Dao cắm gỗ thành công | `impactWood_medium_000.ogg` / Impact Sounds |
-| `SFX/knife_hit_wood_02.ogg` | Biến thể tiếng cắm gỗ | `impactWood_medium_001.ogg` / Impact Sounds |
-| `SFX/knife_hit_wood_03.ogg` | Biến thể tiếng cắm gỗ | `impactWood_medium_002.ogg` / Impact Sounds |
-| `SFX/knife_clash.ogg` | Dao va vào dao đã cắm | `impactMetal_light_000.ogg` / Impact Sounds |
+| `SFX/knife_throw.ogg` | Nhận lệnh ném hợp lệ | `knifeSlice2.ogg` (cắt 0.42s, đỉnh âm sớm để không trễ so với cú ném) / RPG Audio |
+| `SFX/knife_hit_wood_01.ogg` | Dao cắm gỗ thành công | Trộn `impactWood_light_000` + `impactWood_medium_000` + `impactMetal_medium_002` (thân gỗ sắc, thép rung nhẹ ở cán) / Impact Sounds |
+| `SFX/knife_hit_wood_02.ogg` | Biến thể tiếng cắm gỗ | Trộn `impactWood_light_002` + `impactWood_medium_001` + `impactMetal_medium_004`, cao hơn 6% / Impact Sounds |
+| `SFX/knife_hit_wood_03.ogg` | Biến thể tiếng cắm gỗ | Trộn `impactWood_light_004` + `impactWood_medium_003` + `impactMetal_medium_001`, thấp hơn 5% / Impact Sounds |
+| `SFX/knife_clash.ogg` | Dao va vào dao đã cắm | Trộn `impactMetal_light_003` (leng keng) + `impactMetal_heavy_001` (độ nặng) / Impact Sounds |
 | `SFX/stage_clear.ogg` | Qua màn 1–4 | `confirmation_002.ogg` / Interface Sounds |
 | `SFX/run_failed.ogg` | Báo thua sau tiếng va chạm, tùy chọn | `error_006.ogg` / Interface Sounds |
 | `SFX/ui_click.ogg` | Start, Replay, Continue | `click_003.ogg` / Interface Sounds |
@@ -63,9 +63,9 @@ Tạo bằng script Python (Pillow): tái tạo từ art có sẵn hoặc vẽ t
 | 8 skin dao (tô lại từ dao chuẩn, cùng canvas/hình học) | `Art/Knives/knife_*.png` | `KnifeSkin.sprite`, tint = trắng |
 | Icon khóa, coin, sao đủ/thiếu, boss | `Art/Icons/` | `LevelButtonView` (khóa, boss, 3 sao), icon coin ở màn Knives |
 | Khung nút / panel / thẻ skin (9-slice) | `Art/UI/ui_*.png` | Image của mọi Button, thẻ skin, khung gợi ý |
-| SFX báo Guard / Danger Zone, nhận coin, mua dao, trang bị | `Audio/SFX/boss_guard_warning.wav`, `boss_danger_warning.wav`, `coin_collect.wav`, `knife_buy.wav`, `knife_equip.wav` | `GameFeedback` (cue mới) |
+| SFX báo Guard / Danger Zone, nhận coin, mua dao, trang bị | `Audio/SFX/boss_guard_warning.wav`, `boss_danger_warning.wav`, `coin_collect.wav`, `knife_buy.wav`, `knife_equip.wav` | `GameFeedback` (cue mới). Nguồn Kenney (CC0), trộn lại: Guard = `impactPlate_heavy_000` + `impactMetal_heavy_000`; Danger = `impactBell_heavy_000` + `impactWood_heavy_000`; coin = `handleCoins`; mua = `handleCoins` + `confirmation_003`; trang bị = `drawKnife3` + `metalLatch` |
 | Nhạc nền 3 World (lặp, tổng hợp) | `Audio/Music/music_*.wav` | `WorldConfig.music`; `GameFeedback.musicSource` (menu dùng nhạc forest) |
 
-`CampaignBuilder` đã cập nhật để dùng các asset này nếu chạy lại. SFX/nhạc là âm tổng hợp đơn giản, chưa nghe duyệt; volume nhạc mặc định 0.3.
+`CampaignBuilder` đã cập nhật để dùng các asset này nếu chạy lại. Nhạc là âm tổng hợp đơn giản; SFX đã thay bằng clip Kenney trộn lại (chưa nghe duyệt trên loa điện thoại); volume nhạc mặc định 0.3.
 
 Font mặc định không có glyph tiếng Việt và glyph sao (★), nên mọi chuỗi UI là tiếng Anh; sao hiển thị bằng icon.
