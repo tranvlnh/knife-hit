@@ -87,6 +87,21 @@ public class RotatingTarget : MonoBehaviour
         _embeddedKnives.Add((knife, localAngle, buttDistance));
     }
 
+    // Tháo các dao đang cắm khỏi bia để hiệu ứng bia vỡ cho chúng bay đi; từ đây chúng không còn tính vào va chạm.
+    public void DetachKnives(List<Transform> into)
+    {
+        foreach (var (knife, _, _) in _embeddedKnives)
+        {
+            if (knife)
+            {
+                knife.SetParent(null, true);
+                into.Add(knife);
+            }
+        }
+
+        _embeddedKnives.Clear();
+    }
+
     private void ClearEmbeddedKnives()
     {
         foreach (var (knife, _, _) in _embeddedKnives)
