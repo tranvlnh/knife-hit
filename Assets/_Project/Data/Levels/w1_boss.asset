@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aee9607c6309e6143ad190219c1880a0, type: 3}
+  m_Name: w1_boss
+  m_EditorClassIdentifier: Assembly-CSharp::LevelConfig
+  levelId: w1_boss
+  displayName: 'BOSS: STUMP'
+  world: {fileID: 11400000, guid: fa5a8ce42452b9a46a9dfa4af885085c, type: 2}
+  stage: {fileID: 0}
+  boss: {fileID: 11400000, guid: 3275557947ca9c44a9f75bcdce92c400, type: 2}
+  coinReward: 120
+  starBonusCoins: 10
+  twoStarSeconds: 83.3
+  threeStarSeconds: 49
+  unlockSkin: {fileID: 11400000, guid: fdec26cf3e271d8418a95b67621f148d, type: 2}
+  hintId: hint_boss
+  hintText: BOSS! Clear every phase to win.

@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aee9607c6309e6143ad190219c1880a0, type: 3}
+  m_Name: w2_boss
+  m_EditorClassIdentifier: Assembly-CSharp::LevelConfig
+  levelId: w2_boss
+  displayName: 'BOSS: SAND GUARDIAN'
+  world: {fileID: 11400000, guid: 1d64f6d3efb3a7e4cb58653ea082745d, type: 2}
+  stage: {fileID: 0}
+  boss: {fileID: 11400000, guid: 0a1a40da4ac89974c9a3f0632fe22312, type: 2}
+  coinReward: 150
+  starBonusCoins: 15
+  twoStarSeconds: 88.4
+  threeStarSeconds: 52
+  unlockSkin: {fileID: 11400000, guid: b83088ddd66c2d4449b24fdbacd79727, type: 2}
+  hintId: hint_guard
+  hintText: 'GUARD glows blue: your taps are ignored.
+
+    Wait for it to drop.'

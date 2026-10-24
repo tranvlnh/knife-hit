@@ -1,0 +1,48 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e29284e757d76064fb82d3c2159fe0b4, type: 3}
+  m_Name: Boss2_SAND_GUARDIAN
+  m_EditorClassIdentifier: Assembly-CSharp::BossConfig
+  displayName: SAND GUARDIAN
+  targetSprite: {fileID: 21300000, guid: 98495a9a7c6cd1640bd6b19e86a011ef, type: 3}
+  targetTint: {r: 1, g: 0.8, b: 0.5, a: 1}
+  phases:
+  - stage: {fileID: 11400000, guid: 52130329c6bc32047ac5763ca740fcfc, type: 2}
+    windowCycle: 7
+    telegraphSeconds: 1.2
+    guardWindows:
+    - start: 3
+      duration: 1.5
+      blockAngleScale: 1
+    wideZoneWindows: []
+    bannerText: PHASE 1
+  - stage: {fileID: 11400000, guid: 281a4714a59a37a4ea852b0b876a9dcb, type: 2}
+    windowCycle: 7
+    telegraphSeconds: 1.2
+    guardWindows:
+    - start: 3
+      duration: 2
+      blockAngleScale: 1
+    wideZoneWindows: []
+    bannerText: PHASE 2
+  - stage: {fileID: 11400000, guid: 2ad08d24432753f4681f38a6fd414197, type: 2}
+    windowCycle: 7
+    telegraphSeconds: 1.2
+    guardWindows:
+    - start: 2.5
+      duration: 1.5
+      blockAngleScale: 1
+    - start: 5
+      duration: 1.5
+      blockAngleScale: 1
+    wideZoneWindows: []
+    bannerText: PHASE 3
